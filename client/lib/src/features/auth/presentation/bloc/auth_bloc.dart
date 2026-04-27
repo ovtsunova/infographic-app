@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../shared/models/app_user.dart';
-import '../../data/auth_repository.dart';
+import 'package:client/src/features/auth/data/auth_repository.dart';
+import 'package:client/src/shared/models/app_user.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';

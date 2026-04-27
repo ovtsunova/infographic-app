@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/app_router.dart';
-import '../../features/auth/presentation/bloc/auth_bloc.dart';
-import '../models/app_user.dart';
-import 'responsive_layout.dart';
-import 'side_menu.dart';
+import 'package:client/src/app/app_router.dart';
+import 'package:client/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:client/src/shared/models/app_user.dart';
+import 'package:client/src/shared/widgets/responsive_layout.dart';
+import 'package:client/src/shared/widgets/side_menu.dart';
 
 class AppShell extends StatelessWidget {
   final Widget child;

@@ -3,18 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../features/admin/presentation/pages/admin_page.dart';
-import '../features/auth/presentation/bloc/auth_bloc.dart';
-import '../features/auth/presentation/pages/login_page.dart';
-import '../features/auth/presentation/pages/register_page.dart';
-import '../features/dashboard/presentation/pages/dashboard_page.dart';
-import '../features/educational_data/presentation/pages/educational_data_page.dart';
-import '../features/home/presentation/pages/home_page.dart';
-import '../features/infographic_builder/presentation/pages/infographic_builder_page.dart';
-import '../features/profile/presentation/pages/profile_page.dart';
-import '../features/saved_infographics/presentation/pages/saved_infographics_page.dart';
-import '../shared/models/app_user.dart';
-import '../shared/widgets/app_shell.dart';
+import 'package:client/src/features/admin/presentation/pages/admin_page.dart';
+import 'package:client/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:client/src/features/auth/presentation/pages/login_page.dart';
+import 'package:client/src/features/auth/presentation/pages/register_page.dart';
+import 'package:client/src/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:client/src/features/educational_data/presentation/pages/educational_data_page.dart';
+import 'package:client/src/features/home/presentation/pages/home_page.dart';
+import 'package:client/src/features/infographic_builder/presentation/pages/infographic_builder_page.dart';
+import 'package:client/src/features/profile/presentation/pages/profile_page.dart';
+import 'package:client/src/features/saved_infographics/presentation/pages/saved_infographics_page.dart';
+import 'package:client/src/shared/models/app_user.dart';
+import 'package:client/src/shared/widgets/app_shell.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 

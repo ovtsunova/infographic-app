@@ -20,21 +20,18 @@ class EducationalDataRepository {
         _apiClient.dio.get('/students'),
       ]);
 
-      final groups = _readDataList(responses[0].data)
-          .map(StudyGroup.fromJson)
-          .toList();
+      final groups =
+          _readDataList(responses[0].data).map(StudyGroup.fromJson).toList();
 
       final disciplines = _readDataList(responses[1].data)
           .map(Discipline.fromJson)
           .toList();
 
-      final periods = _readDataList(responses[2].data)
-          .map(StudyPeriod.fromJson)
-          .toList();
+      final periods =
+          _readDataList(responses[2].data).map(StudyPeriod.fromJson).toList();
 
-      final students = _readDataList(responses[3].data)
-          .map(Student.fromJson)
-          .toList();
+      final students =
+          _readDataList(responses[3].data).map(Student.fromJson).toList();
 
       return EducationalDataBundle(
         groups: groups,
@@ -42,6 +39,69 @@ class EducationalDataRepository {
         periods: periods,
         students: students,
       );
+    } on DioException catch (error) {
+      throw EducationalDataException(_readErrorMessage(error));
+    } catch (error) {
+      throw EducationalDataException(error.toString());
+    }
+  }
+
+  Future<StudyGroup> createGroup({
+    required String groupName,
+    required int course,
+    required String studyYear,
+    String? directionName,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post(
+        '/groups',
+        data: {
+          'groupName': groupName.trim(),
+          'course': course,
+          'studyYear': studyYear.trim(),
+          'directionName': _nullIfEmpty(directionName),
+        },
+      );
+
+      return StudyGroup.fromJson(_readDataObject(response.data));
+    } on DioException catch (error) {
+      throw EducationalDataException(_readErrorMessage(error));
+    } catch (error) {
+      throw EducationalDataException(error.toString());
+    }
+  }
+
+  Future<StudyGroup> updateGroup({
+    required int id,
+    required String groupName,
+    required int course,
+    required String studyYear,
+    String? directionName,
+  }) async {
+    try {
+      final response = await _apiClient.dio.put(
+        '/groups/$id',
+        data: {
+          'groupName': groupName.trim(),
+          'course': course,
+          'studyYear': studyYear.trim(),
+          'directionName': _nullIfEmpty(directionName),
+        },
+      );
+
+      return StudyGroup.fromJson(_readDataObject(response.data));
+    } on DioException catch (error) {
+      throw EducationalDataException(_readErrorMessage(error));
+    } catch (error) {
+      throw EducationalDataException(error.toString());
+    }
+  }
+
+  Future<void> deleteGroup({
+    required int id,
+  }) async {
+    try {
+      await _apiClient.dio.delete('/groups/$id');
     } on DioException catch (error) {
       throw EducationalDataException(_readErrorMessage(error));
     } catch (error) {
@@ -61,6 +121,21 @@ class EducationalDataRepository {
     }
 
     return [];
+  }
+
+  Map<String, dynamic> _readDataObject(dynamic responseData) {
+    final responseMap = _asMap(responseData);
+    final data = responseMap['data'];
+
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+
+    return {};
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
@@ -87,6 +162,20 @@ class EducationalDataRepository {
     }
 
     return 'Ошибка загрузки учебных данных';
+  }
+
+  String? _nullIfEmpty(String? value) {
+    if (value == null) {
+      return null;
+    }
+
+    final text = value.trim();
+
+    if (text.isEmpty) {
+      return null;
+    }
+
+    return text;
   }
 }
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/app_router.dart';
-import '../models/app_user.dart';
+import 'package:client/src/app/app_router.dart';
+import 'package:client/src/shared/models/app_user.dart';
 
 class SideMenu extends StatelessWidget {
   final String currentPath;

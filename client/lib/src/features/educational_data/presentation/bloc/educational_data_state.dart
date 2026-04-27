@@ -3,6 +3,7 @@ part of 'educational_data_bloc.dart';
 enum EducationalDataStatus {
   initial,
   loading,
+  submitting,
   success,
   failure,
 }
@@ -31,6 +32,18 @@ class EducationalDataState extends Equatable {
         periods = const [],
         students = const [],
         message = null;
+
+  bool get isBusy {
+    return status == EducationalDataStatus.loading ||
+        status == EducationalDataStatus.submitting;
+  }
+
+  bool get hasAnyData {
+    return groups.isNotEmpty ||
+        disciplines.isNotEmpty ||
+        periods.isNotEmpty ||
+        students.isNotEmpty;
+  }
 
   EducationalDataState copyWith({
     EducationalDataStatus? status,
