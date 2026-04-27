@@ -7,6 +7,7 @@ import 'package:client/src/core/storage/app_storage.dart';
 import 'package:client/src/features/auth/data/auth_repository.dart';
 import 'package:client/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:client/src/features/educational_data/data/educational_data_repository.dart';
+import 'package:client/src/features/saved_infographics/data/saved_infographics_repository.dart';
 
 import 'app_router.dart';
 import 'app_theme.dart';
@@ -23,6 +24,7 @@ class _InfographicAppState extends State<InfographicApp> {
   late final ApiClient _apiClient;
   late final AuthRepository _authRepository;
   late final EducationalDataRepository _educationalDataRepository;
+  late final SavedInfographicsRepository _savedInfographicsRepository;
   late final AuthBloc _authBloc;
   late final GoRouter _router;
 
@@ -42,6 +44,10 @@ class _InfographicAppState extends State<InfographicApp> {
     );
 
     _educationalDataRepository = EducationalDataRepository(
+      apiClient: _apiClient,
+    );
+
+    _savedInfographicsRepository = SavedInfographicsRepository(
       apiClient: _apiClient,
     );
 
@@ -67,6 +73,9 @@ class _InfographicAppState extends State<InfographicApp> {
         ),
         RepositoryProvider<EducationalDataRepository>.value(
           value: _educationalDataRepository,
+        ),
+        RepositoryProvider.value(
+          value: _savedInfographicsRepository,
         ),
       ],
       child: BlocProvider<AuthBloc>.value(

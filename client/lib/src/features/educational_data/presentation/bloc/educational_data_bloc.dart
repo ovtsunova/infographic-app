@@ -37,6 +37,10 @@ class EducationalDataBloc
     on<EducationalGradeCreateRequested>(_onGradeCreateRequested);
     on<EducationalGradeUpdateRequested>(_onGradeUpdateRequested);
     on<EducationalGradeDeleteRequested>(_onGradeDeleteRequested);
+
+    on<EducationalAttendanceCreateRequested>(_onAttendanceCreateRequested);
+    on<EducationalAttendanceUpdateRequested>(_onAttendanceUpdateRequested);
+    on<EducationalAttendanceDeleteRequested>(_onAttendanceDeleteRequested);
   }
 
   Future<void> _onStarted(
@@ -287,6 +291,54 @@ class EducationalDataBloc
     );
   }
 
+  Future<void> _onAttendanceCreateRequested(
+    EducationalAttendanceCreateRequested event,
+    Emitter<EducationalDataState> emit,
+  ) async {
+    await _submitAndReload(
+      emit: emit,
+      successMessage: 'Посещаемость успешно добавлена',
+      action: () => _repository.createAttendance(
+        studentId: event.studentId,
+        disciplineId: event.disciplineId,
+        periodId: event.periodId,
+        attendedCount: event.attendedCount,
+        missedCount: event.missedCount,
+      ),
+    );
+  }
+
+  Future<void> _onAttendanceUpdateRequested(
+    EducationalAttendanceUpdateRequested event,
+    Emitter<EducationalDataState> emit,
+  ) async {
+    await _submitAndReload(
+      emit: emit,
+      successMessage: 'Посещаемость успешно обновлена',
+      action: () => _repository.updateAttendance(
+        id: event.id,
+        studentId: event.studentId,
+        disciplineId: event.disciplineId,
+        periodId: event.periodId,
+        attendedCount: event.attendedCount,
+        missedCount: event.missedCount,
+      ),
+    );
+  }
+
+  Future<void> _onAttendanceDeleteRequested(
+    EducationalAttendanceDeleteRequested event,
+    Emitter<EducationalDataState> emit,
+  ) async {
+    await _submitAndReload(
+      emit: emit,
+      successMessage: 'Посещаемость успешно удалена',
+      action: () => _repository.deleteAttendance(
+        id: event.id,
+      ),
+    );
+  }
+
   Future<void> _loadData(
     Emitter<EducationalDataState> emit,
   ) async {
@@ -308,6 +360,7 @@ class EducationalDataBloc
           periods: data.periods,
           students: data.students,
           grades: data.grades,
+          attendance: data.attendance,
         ),
       );
     } catch (error) {
@@ -347,6 +400,7 @@ class EducationalDataBloc
           periods: data.periods,
           students: data.students,
           grades: data.grades,
+          attendance: data.attendance,
           message: successMessage,
         ),
       );

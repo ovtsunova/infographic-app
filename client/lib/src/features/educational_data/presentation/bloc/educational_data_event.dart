@@ -316,3 +316,67 @@ class EducationalGradeDeleteRequested extends EducationalDataEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class EducationalAttendanceCreateRequested extends EducationalDataEvent {
+  final int studentId;
+  final int disciplineId;
+  final int periodId;
+  final int attendedCount;
+  final int missedCount;
+
+  const EducationalAttendanceCreateRequested({
+    required this.studentId,
+    required this.disciplineId,
+    required this.periodId,
+    required this.attendedCount,
+    required this.missedCount,
+  });
+
+  @override
+  List<Object?> get props => [
+        studentId,
+        disciplineId,
+        periodId,
+        attendedCount,
+        missedCount,
+      ];
+}
+
+class EducationalAttendanceUpdateRequested extends EducationalDataEvent {
+  final int id;
+  final int studentId;
+  final int disciplineId;
+  final int periodId;
+  final int attendedCount;
+  final int missedCount;
+
+  const EducationalAttendanceUpdateRequested({
+    required this.id,
+    required this.studentId,
+    required this.disciplineId,
+    required this.periodId,
+    required this.attendedCount,
+    required this.missedCount,
+  });
+
+  @override
+  List<Object?> get props => [
+        id,
+        studentId,
+        disciplineId,
+        periodId,
+        attendedCount,
+        missedCount,
+      ];
+}
+
+class EducationalAttendanceDeleteRequested extends EducationalDataEvent {
+  final int id;
+
+  const EducationalAttendanceDeleteRequested({
+    required this.id,
+  });
+
+  @override
+  List<Object?> get props => [id];
+}

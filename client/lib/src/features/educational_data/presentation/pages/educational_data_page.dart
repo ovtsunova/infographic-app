@@ -5,6 +5,7 @@ import 'package:client/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:client/src/features/educational_data/data/educational_data_models.dart';
 import 'package:client/src/features/educational_data/data/educational_data_repository.dart';
 import 'package:client/src/features/educational_data/presentation/bloc/educational_data_bloc.dart';
+import 'package:client/src/features/educational_data/presentation/widgets/attendance_widgets.dart';
 import 'package:client/src/features/educational_data/presentation/widgets/grades_widgets.dart';
 import 'package:client/src/shared/models/app_user.dart';
 
@@ -13,7 +14,7 @@ class EducationalDataPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<EducationalDataBloc>(
+    return BlocProvider(
       create: (context) => EducationalDataBloc(
         repository: context.read<EducationalDataRepository>(),
       )..add(const EducationalDataStarted()),
@@ -94,6 +95,10 @@ class _EducationalDataView extends StatelessWidget {
                             value: _AddEntityType.grade,
                             child: Text('Добавить оценку'),
                           ),
+                          PopupMenuItem(
+                            value: _AddEntityType.attendance,
+                            child: Text('Добавить посещаемость'),
+                          ),
                         ],
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -146,7 +151,7 @@ class _EducationalDataView extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Раздел предназначен для просмотра и администрирования учебных групп, дисциплин, учебных периодов, студентов и оценок.',
+                  'Раздел предназначен для просмотра и администрирования учебных групп, дисциплин, учебных периодов, студентов, оценок и посещаемости.',
                   style: TextStyle(
                     color: Color(0xFF6B7280),
                     height: 1.4,
@@ -315,6 +320,44 @@ class _EducationalDataView extends StatelessWidget {
               ),
             );
         return;
+
+      case _AddEntityType.attendance:
+        if (state.students.isEmpty ||
+            state.disciplines.isEmpty ||
+            state.periods.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Для добавления посещаемости должны быть созданы студенты, дисциплины и учебные периоды',
+              ),
+            ),
+          );
+          return;
+        }
+
+        final result = await showDialog<AttendanceFormData>(
+          context: context,
+          builder: (_) => AttendanceFormDialog(
+            students: state.students,
+            disciplines: state.disciplines,
+            periods: state.periods,
+          ),
+        );
+
+        if (result == null || !context.mounted) {
+          return;
+        }
+
+        context.read<EducationalDataBloc>().add(
+              EducationalAttendanceCreateRequested(
+                studentId: result.studentId,
+                disciplineId: result.disciplineId,
+                periodId: result.periodId,
+                attendedCount: result.attendedCount,
+                missedCount: result.missedCount,
+              ),
+            );
+        return;
     }
   }
 }
@@ -325,6 +368,7 @@ enum _AddEntityType {
   period,
   student,
   grade,
+  attendance,
 }
 
 class _LoadingCard extends StatelessWidget {
@@ -404,12 +448,12 @@ class _LoadedContent extends StatelessWidget {
     return Column(
       children: [
         GridView.count(
-          crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 5 : 2,
+          crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 6 : 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 1.9,
+          childAspectRatio: MediaQuery.of(context).size.width > 1200 ? 1.55 : 1.75,
           children: [
             _SummaryCard(
               title: 'Группы',
@@ -436,6 +480,11 @@ class _LoadedContent extends StatelessWidget {
               value: state.grades.length.toString(),
               icon: Icons.grade_rounded,
             ),
+            _SummaryCard(
+              title: 'Посещаемость',
+              value: state.attendance.length.toString(),
+              icon: Icons.event_available_rounded,
+            ),
           ],
         ),
         const SizedBox(height: 24),
@@ -443,7 +492,7 @@ class _LoadedContent extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: DefaultTabController(
-              length: 5,
+              length: 6,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -455,6 +504,7 @@ class _LoadedContent extends StatelessWidget {
                       Tab(text: 'Периоды'),
                       Tab(text: 'Студенты'),
                       Tab(text: 'Оценки'),
+                      Tab(text: 'Посещаемость'),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -491,6 +541,14 @@ class _LoadedContent extends StatelessWidget {
                           isAdmin: isAdmin,
                           isBusy: state.isBusy,
                         ),
+                        AttendanceTable(
+                          attendance: state.attendance,
+                          students: state.students,
+                          disciplines: state.disciplines,
+                          periods: state.periods,
+                          isAdmin: isAdmin,
+                          isBusy: state.isBusy,
+                        ),
                       ],
                     ),
                   ),
@@ -519,33 +577,41 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(14),
         child: Row(
           children: [
             Icon(
               icon,
               color: Theme.of(context).colorScheme.primary,
-              size: 34,
+              size: 32,
             ),
-            const SizedBox(width: 14),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      height: 1.1,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -633,7 +699,6 @@ class _GroupsTable extends StatelessWidget {
     StudyGroup group,
   ) async {
     final state = context.read<EducationalDataBloc>().state;
-
     final hasStudents = state.students.any(
       (student) => student.groupId == group.id,
     );
@@ -642,15 +707,14 @@ class _GroupsTable extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Нельзя удалить группу, пока к ней привязаны студенты. Сначала удалите или перенесите студентов.',
+            'Нельзя удалить группу, пока к ней привязаны студенты.',
           ),
-          backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    final confirmed = await _confirmDelete(
+    final confirmed = await _showDeleteDialog(
       context: context,
       title: 'Удаление учебной группы',
       message: 'Вы действительно хотите удалить группу "${group.groupName}"?',
@@ -687,9 +751,9 @@ class _DisciplinesTable extends StatelessWidget {
       child: DataTable(
         columns: [
           const DataColumn(label: Text('ID')),
-          const DataColumn(label: Text('Дисциплина')),
-          const DataColumn(label: Text('Преподаватель')),
+          const DataColumn(label: Text('Название')),
           const DataColumn(label: Text('Описание')),
+          const DataColumn(label: Text('Преподаватель')),
           if (isAdmin) const DataColumn(label: Text('Действия')),
         ],
         rows: disciplines.map((discipline) {
@@ -697,8 +761,8 @@ class _DisciplinesTable extends StatelessWidget {
             cells: [
               DataCell(Text(discipline.id.toString())),
               DataCell(Text(discipline.disciplineName)),
-              DataCell(Text(discipline.teacherName ?? '—')),
               DataCell(Text(discipline.description ?? '—')),
+              DataCell(Text(discipline.teacherName ?? '—')),
               if (isAdmin)
                 DataCell(
                   _TableActions(
@@ -741,7 +805,28 @@ class _DisciplinesTable extends StatelessWidget {
     BuildContext context,
     Discipline discipline,
   ) async {
-    final confirmed = await _confirmDelete(
+    final state = context.read<EducationalDataBloc>().state;
+
+    final hasGrades = state.grades.any(
+      (grade) => grade.disciplineId == discipline.id,
+    );
+
+    final hasAttendance = state.attendance.any(
+      (attendance) => attendance.disciplineId == discipline.id,
+    );
+
+    if (hasGrades || hasAttendance) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Нельзя удалить дисциплину, пока к ней привязаны оценки или посещаемость.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await _showDeleteDialog(
       context: context,
       title: 'Удаление дисциплины',
       message:
@@ -836,11 +921,31 @@ class _PeriodsTable extends StatelessWidget {
     BuildContext context,
     StudyPeriod period,
   ) async {
-    final confirmed = await _confirmDelete(
+    final state = context.read<EducationalDataBloc>().state;
+
+    final hasGrades = state.grades.any(
+      (grade) => grade.periodId == period.id,
+    );
+
+    final hasAttendance = state.attendance.any(
+      (attendance) => attendance.periodId == period.id,
+    );
+
+    if (hasGrades || hasAttendance) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Нельзя удалить период, пока к нему привязаны оценки или посещаемость.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await _showDeleteDialog(
       context: context,
       title: 'Удаление учебного периода',
-      message:
-          'Вы действительно хотите удалить период "${period.studyYear}, семестр ${period.semester}"?',
+      message: 'Вы действительно хотите удалить период "${period.title}"?',
     );
 
     if (confirmed != true || !context.mounted) {
@@ -876,18 +981,22 @@ class _StudentsTable extends StatelessWidget {
       child: DataTable(
         columns: [
           const DataColumn(label: Text('ID')),
-          const DataColumn(label: Text('ФИО')),
+          const DataColumn(label: Text('Фамилия')),
+          const DataColumn(label: Text('Имя')),
+          const DataColumn(label: Text('Отчество')),
+          const DataColumn(label: Text('Зачетная книжка')),
           const DataColumn(label: Text('Группа')),
-          const DataColumn(label: Text('Зачётная книжка')),
           if (isAdmin) const DataColumn(label: Text('Действия')),
         ],
         rows: students.map((student) {
           return DataRow(
             cells: [
               DataCell(Text(student.id.toString())),
-              DataCell(Text(student.fullName)),
-              DataCell(Text(student.groupName)),
+              DataCell(Text(student.lastName)),
+              DataCell(Text(student.firstName)),
+              DataCell(Text(student.patronymic ?? '—')),
               DataCell(Text(student.recordBookNumber ?? '—')),
+              DataCell(Text(student.groupName)),
               if (isAdmin)
                 DataCell(
                   _TableActions(
@@ -907,15 +1016,6 @@ class _StudentsTable extends StatelessWidget {
     BuildContext context,
     Student student,
   ) async {
-    if (groups.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Сначала добавьте хотя бы одну учебную группу'),
-        ),
-      );
-      return;
-    }
-
     final result = await showDialog<_StudentFormData>(
       context: context,
       builder: (_) => _StudentFormDialog(
@@ -944,7 +1044,28 @@ class _StudentsTable extends StatelessWidget {
     BuildContext context,
     Student student,
   ) async {
-    final confirmed = await _confirmDelete(
+    final state = context.read<EducationalDataBloc>().state;
+
+    final hasGrades = state.grades.any(
+      (grade) => grade.studentId == student.id,
+    );
+
+    final hasAttendance = state.attendance.any(
+      (attendance) => attendance.studentId == student.id,
+    );
+
+    if (hasGrades || hasAttendance) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Нельзя удалить студента, пока к нему привязаны оценки или посещаемость.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await _showDeleteDialog(
       context: context,
       title: 'Удаление студента',
       message: 'Вы действительно хотите удалить студента "${student.fullName}"?',
@@ -957,6 +1078,27 @@ class _StudentsTable extends StatelessWidget {
     context.read<EducationalDataBloc>().add(
           EducationalStudentDeleteRequested(id: student.id),
         );
+  }
+}
+
+class _TableScroll extends StatelessWidget {
+  final Widget child;
+
+  const _TableScroll({
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scrollbar(
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SingleChildScrollView(
+          child: child,
+        ),
+      ),
+    );
   }
 }
 
@@ -991,27 +1133,6 @@ class _TableActions extends StatelessWidget {
   }
 }
 
-class _TableScroll extends StatelessWidget {
-  final Widget child;
-
-  const _TableScroll({
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scrollbar(
-      thumbVisibility: true,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SingleChildScrollView(
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
 class _EmptyListMessage extends StatelessWidget {
   final String text;
 
@@ -1032,63 +1153,27 @@ class _EmptyListMessage extends StatelessWidget {
   }
 }
 
-Future<bool?> _confirmDelete({
+Future<bool?> _showDeleteDialog({
   required BuildContext context,
   required String title,
   required String message,
 }) {
   return showDialog<bool>(
     context: context,
-    barrierDismissible: false,
     builder: (dialogContext) {
-      return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 420,
+      return AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Отмена'),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  message,
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 22),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(false),
-                      child: const Text('Отмена'),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(true),
-                      child: const Text('Удалить'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Удалить'),
           ),
-        ),
+        ],
       );
     },
   );
@@ -1124,15 +1209,12 @@ class _GroupFormDialogState extends State<_GroupFormDialog> {
     _groupNameController = TextEditingController(
       text: group?.groupName ?? '',
     );
-
     _courseController = TextEditingController(
       text: group?.course.toString() ?? '',
     );
-
     _studyYearController = TextEditingController(
       text: group?.studyYear ?? '',
     );
-
     _directionNameController = TextEditingController(
       text: group?.directionName ?? '',
     );
@@ -1154,10 +1236,16 @@ class _GroupFormDialogState extends State<_GroupFormDialog> {
       return;
     }
 
+    final course = int.tryParse(_courseController.text.trim());
+
+    if (course == null) {
+      return;
+    }
+
     Navigator.of(context).pop(
       _GroupFormData(
         groupName: _groupNameController.text.trim(),
-        course: int.parse(_courseController.text.trim()),
+        course: course,
         studyYear: _studyYearController.text.trim(),
         directionName: _nullIfEmpty(_directionNameController.text),
       ),
@@ -1170,60 +1258,64 @@ class _GroupFormDialogState extends State<_GroupFormDialog> {
       title: Text(
         _isEditMode ? 'Редактирование группы' : 'Добавление группы',
       ),
-      content: _DialogFormBody(
-        formKey: _formKey,
-        width: 460,
-        children: [
-          TextFormField(
-            controller: _groupNameController,
-            decoration: const InputDecoration(
-              labelText: 'Название группы',
-              hintText: 'Например: ИСП-31',
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _groupNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Название группы',
+                    hintText: 'Например: ИСП-31',
+                  ),
+                  validator: (value) => _requiredTextValidator(
+                    value,
+                    emptyMessage: 'Введите название группы',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _courseController,
+                  decoration: const InputDecoration(
+                    labelText: 'Курс',
+                    hintText: 'Например: 3',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) => _intRangeValidator(
+                    value,
+                    emptyMessage: 'Введите курс',
+                    min: 1,
+                    max: 6,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _studyYearController,
+                  decoration: const InputDecoration(
+                    labelText: 'Учебный год',
+                    hintText: 'Например: 2025/2026',
+                  ),
+                  validator: (value) => _requiredTextValidator(
+                    value,
+                    emptyMessage: 'Введите учебный год',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _directionNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Направление подготовки',
+                    hintText: 'Необязательное поле',
+                  ),
+                ),
+              ],
             ),
-            maxLength: 40,
-            validator: _requiredValidator('Введите название учебной группы'),
           ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _courseController,
-            decoration: const InputDecoration(
-              labelText: 'Курс',
-              hintText: 'Например: 3',
-            ),
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              final course = int.tryParse(value?.trim() ?? '');
-
-              if (course == null) {
-                return 'Введите курс числом';
-              }
-
-              if (course < 1 || course > 6) {
-                return 'Курс должен быть от 1 до 6';
-              }
-
-              return null;
-            },
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _studyYearController,
-            decoration: const InputDecoration(
-              labelText: 'Учебный год',
-              hintText: 'Например: 2025/2026',
-            ),
-            validator: _studyYearValidator,
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _directionNameController,
-            decoration: const InputDecoration(
-              labelText: 'Направление подготовки',
-              hintText: 'Можно оставить пустым',
-            ),
-            maxLength: 120,
-          ),
-        ],
+        ),
       ),
       actions: [
         TextButton(
@@ -1237,6 +1329,20 @@ class _GroupFormDialogState extends State<_GroupFormDialog> {
       ],
     );
   }
+}
+
+class _GroupFormData {
+  final String groupName;
+  final int course;
+  final String studyYear;
+  final String? directionName;
+
+  const _GroupFormData({
+    required this.groupName,
+    required this.course,
+    required this.studyYear,
+    required this.directionName,
+  });
 }
 
 class _DisciplineFormDialog extends StatefulWidget {
@@ -1268,11 +1374,9 @@ class _DisciplineFormDialogState extends State<_DisciplineFormDialog> {
     _disciplineNameController = TextEditingController(
       text: discipline?.disciplineName ?? '',
     );
-
     _descriptionController = TextEditingController(
       text: discipline?.description ?? '',
     );
-
     _teacherNameController = TextEditingController(
       text: discipline?.teacherName ?? '',
     );
@@ -1306,41 +1410,51 @@ class _DisciplineFormDialogState extends State<_DisciplineFormDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-        _isEditMode ? 'Редактирование дисциплины' : 'Добавление дисциплины',
+        _isEditMode
+            ? 'Редактирование дисциплины'
+            : 'Добавление дисциплины',
       ),
-      content: _DialogFormBody(
-        formKey: _formKey,
+      content: SizedBox(
         width: 520,
-        children: [
-          TextFormField(
-            controller: _disciplineNameController,
-            decoration: const InputDecoration(
-              labelText: 'Название дисциплины',
-              hintText: 'Например: Математика',
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _disciplineNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Название дисциплины',
+                    hintText: 'Например: Математика',
+                  ),
+                  validator: (value) => _requiredTextValidator(
+                    value,
+                    emptyMessage: 'Введите название дисциплины',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Описание',
+                    hintText: 'Необязательное поле',
+                  ),
+                  minLines: 2,
+                  maxLines: 4,
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _teacherNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Преподаватель',
+                    hintText: 'Необязательное поле',
+                  ),
+                ),
+              ],
             ),
-            maxLength: 120,
-            validator: _requiredValidator('Введите название дисциплины'),
           ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _teacherNameController,
-            decoration: const InputDecoration(
-              labelText: 'Преподаватель',
-              hintText: 'Можно оставить пустым',
-            ),
-            maxLength: 150,
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _descriptionController,
-            decoration: const InputDecoration(
-              labelText: 'Описание',
-              hintText: 'Можно оставить пустым',
-            ),
-            maxLines: 3,
-            maxLength: 300,
-          ),
-        ],
+        ),
       ),
       actions: [
         TextButton(
@@ -1354,6 +1468,18 @@ class _DisciplineFormDialogState extends State<_DisciplineFormDialog> {
       ],
     );
   }
+}
+
+class _DisciplineFormData {
+  final String disciplineName;
+  final String? description;
+  final String? teacherName;
+
+  const _DisciplineFormData({
+    required this.disciplineName,
+    required this.description,
+    required this.teacherName,
+  });
 }
 
 class _PeriodFormDialog extends StatefulWidget {
@@ -1386,15 +1512,12 @@ class _PeriodFormDialogState extends State<_PeriodFormDialog> {
     _studyYearController = TextEditingController(
       text: period?.studyYear ?? '',
     );
-
     _semesterController = TextEditingController(
       text: period?.semester.toString() ?? '',
     );
-
     _startDateController = TextEditingController(
       text: period?.startDate ?? '',
     );
-
     _endDateController = TextEditingController(
       text: period?.endDate ?? '',
     );
@@ -1416,119 +1539,92 @@ class _PeriodFormDialogState extends State<_PeriodFormDialog> {
       return;
     }
 
+    final semester = int.tryParse(_semesterController.text.trim());
+
+    if (semester == null) {
+      return;
+    }
+
     Navigator.of(context).pop(
       _PeriodFormData(
         studyYear: _studyYearController.text.trim(),
-        semester: int.parse(_semesterController.text.trim()),
+        semester: semester,
         startDate: _startDateController.text.trim(),
         endDate: _endDateController.text.trim(),
       ),
     );
   }
 
-  Future<void> _pickDate(TextEditingController controller) async {
-    final initialDate = DateTime.tryParse(controller.text.trim()) ??
-        DateTime(DateTime.now().year, 9, 1);
-
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate == null) {
-      return;
-    }
-
-    controller.text = pickedDate.toIso8601String().substring(0, 10);
-  }
-
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-        _isEditMode ? 'Редактирование периода' : 'Добавление периода',
+        _isEditMode
+            ? 'Редактирование учебного периода'
+            : 'Добавление учебного периода',
       ),
-      content: _DialogFormBody(
-        formKey: _formKey,
-        width: 460,
-        children: [
-          TextFormField(
-            controller: _studyYearController,
-            decoration: const InputDecoration(
-              labelText: 'Учебный год',
-              hintText: 'Например: 2025/2026',
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _studyYearController,
+                  decoration: const InputDecoration(
+                    labelText: 'Учебный год',
+                    hintText: 'Например: 2025/2026',
+                  ),
+                  validator: (value) => _requiredTextValidator(
+                    value,
+                    emptyMessage: 'Введите учебный год',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _semesterController,
+                  decoration: const InputDecoration(
+                    labelText: 'Семестр',
+                    hintText: 'Например: 1',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) => _intRangeValidator(
+                    value,
+                    emptyMessage: 'Введите номер семестра',
+                    min: 1,
+                    max: 12,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _startDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'Дата начала',
+                    hintText: 'Например: 2025-09-01',
+                  ),
+                  validator: (value) => _requiredTextValidator(
+                    value,
+                    emptyMessage: 'Введите дату начала',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _endDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'Дата окончания',
+                    hintText: 'Например: 2026-01-31',
+                  ),
+                  validator: (value) => _requiredTextValidator(
+                    value,
+                    emptyMessage: 'Введите дату окончания',
+                  ),
+                ),
+              ],
             ),
-            validator: _studyYearValidator,
           ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _semesterController,
-            decoration: const InputDecoration(
-              labelText: 'Семестр',
-              hintText: 'Например: 1',
-            ),
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              final semester = int.tryParse(value?.trim() ?? '');
-
-              if (semester == null) {
-                return 'Введите номер семестра';
-              }
-
-              if (semester < 1 || semester > 12) {
-                return 'Семестр должен быть от 1 до 12';
-              }
-
-              return null;
-            },
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _startDateController,
-            decoration: InputDecoration(
-              labelText: 'Дата начала',
-              hintText: 'YYYY-MM-DD',
-              suffixIcon: IconButton(
-                onPressed: () => _pickDate(_startDateController),
-                icon: const Icon(Icons.calendar_month_rounded),
-              ),
-            ),
-            validator: _dateValidator('Введите дату начала'),
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _endDateController,
-            decoration: InputDecoration(
-              labelText: 'Дата окончания',
-              hintText: 'YYYY-MM-DD',
-              suffixIcon: IconButton(
-                onPressed: () => _pickDate(_endDateController),
-                icon: const Icon(Icons.calendar_month_rounded),
-              ),
-            ),
-            validator: (value) {
-              final error = _dateValidator('Введите дату окончания')(value);
-
-              if (error != null) {
-                return error;
-              }
-
-              final startDate =
-                  DateTime.tryParse(_startDateController.text.trim());
-              final endDate = DateTime.tryParse(_endDateController.text.trim());
-
-              if (startDate != null &&
-                  endDate != null &&
-                  startDate.isAfter(endDate)) {
-                return 'Дата начала не может быть позже даты окончания';
-              }
-
-              return null;
-            },
-          ),
-        ],
+        ),
       ),
       actions: [
         TextButton(
@@ -1542,6 +1638,20 @@ class _PeriodFormDialogState extends State<_PeriodFormDialog> {
       ],
     );
   }
+}
+
+class _PeriodFormData {
+  final String studyYear;
+  final int semester;
+  final String startDate;
+  final String endDate;
+
+  const _PeriodFormData({
+    required this.studyYear,
+    required this.semester,
+    required this.startDate,
+    required this.endDate,
+  });
 }
 
 class _StudentFormDialog extends StatefulWidget {
@@ -1578,24 +1688,17 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
     _lastNameController = TextEditingController(
       text: student?.lastName ?? '',
     );
-
     _firstNameController = TextEditingController(
       text: student?.firstName ?? '',
     );
-
     _patronymicController = TextEditingController(
       text: student?.patronymic ?? '',
     );
-
     _recordBookNumberController = TextEditingController(
       text: student?.recordBookNumber ?? '',
     );
 
-    final initialGroupId = student?.groupId;
-
-    _selectedGroupId = widget.groups.any((group) => group.id == initialGroupId)
-        ? initialGroupId
-        : null;
+    _selectedGroupId = _hasGroup(student?.groupId) ? student?.groupId : null;
   }
 
   @override
@@ -1605,6 +1708,14 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
     _patronymicController.dispose();
     _recordBookNumberController.dispose();
     super.dispose();
+  }
+
+  bool _hasGroup(int? id) {
+    if (id == null) {
+      return false;
+    }
+
+    return widget.groups.any((group) => group.id == id);
   }
 
   void _submit() {
@@ -1637,71 +1748,82 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
       title: Text(
         _isEditMode ? 'Редактирование студента' : 'Добавление студента',
       ),
-      content: _DialogFormBody(
-        formKey: _formKey,
+      content: SizedBox(
         width: 520,
-        children: [
-          TextFormField(
-            controller: _lastNameController,
-            decoration: const InputDecoration(
-              labelText: 'Фамилия',
-            ),
-            maxLength: 50,
-            validator: _requiredValidator('Введите фамилию студента'),
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _firstNameController,
-            decoration: const InputDecoration(
-              labelText: 'Имя',
-            ),
-            maxLength: 50,
-            validator: _requiredValidator('Введите имя студента'),
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _patronymicController,
-            decoration: const InputDecoration(
-              labelText: 'Отчество',
-              hintText: 'Можно оставить пустым',
-            ),
-            maxLength: 50,
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _recordBookNumberController,
-            decoration: const InputDecoration(
-              labelText: 'Номер зачётной книжки',
-              hintText: 'Можно оставить пустым',
-            ),
-            maxLength: 40,
-          ),
-          const SizedBox(height: 14),
-          DropdownButtonFormField<int>(
-            value: _selectedGroupId,
-            decoration: const InputDecoration(
-              labelText: 'Учебная группа',
-            ),
-            items: widget.groups.map((group) {
-              return DropdownMenuItem<int>(
-                value: group.id,
-                child: Text(group.groupName),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedGroupId = value;
-              });
-            },
-            validator: (value) {
-              if (value == null) {
-                return 'Выберите учебную группу';
-              }
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _lastNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Фамилия',
+                    hintText: 'Например: Иванов',
+                  ),
+                  validator: (value) => _requiredTextValidator(
+                    value,
+                    emptyMessage: 'Введите фамилию',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _firstNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Имя',
+                    hintText: 'Например: Иван',
+                  ),
+                  validator: (value) => _requiredTextValidator(
+                    value,
+                    emptyMessage: 'Введите имя',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _patronymicController,
+                  decoration: const InputDecoration(
+                    labelText: 'Отчество',
+                    hintText: 'Необязательное поле',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _recordBookNumberController,
+                  decoration: const InputDecoration(
+                    labelText: 'Номер зачетной книжки',
+                    hintText: 'Необязательное поле',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<int>(
+                  value: _selectedGroupId,
+                  decoration: const InputDecoration(
+                    labelText: 'Учебная группа',
+                  ),
+                  items: widget.groups.map((group) {
+                    return DropdownMenuItem<int>(
+                      value: group.id,
+                      child: Text(group.groupName),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedGroupId = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Выберите учебную группу';
+                    }
 
-              return null;
-            },
+                    return null;
+                  },
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
       actions: [
         TextButton(
@@ -1715,74 +1837,6 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
       ],
     );
   }
-}
-
-class _DialogFormBody extends StatelessWidget {
-  final GlobalKey<FormState> formKey;
-  final double width;
-  final List<Widget> children;
-
-  const _DialogFormBody({
-    required this.formKey,
-    required this.width,
-    required this.children,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: SingleChildScrollView(
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: children,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GroupFormData {
-  final String groupName;
-  final int course;
-  final String studyYear;
-  final String? directionName;
-
-  const _GroupFormData({
-    required this.groupName,
-    required this.course,
-    required this.studyYear,
-    required this.directionName,
-  });
-}
-
-class _DisciplineFormData {
-  final String disciplineName;
-  final String? description;
-  final String? teacherName;
-
-  const _DisciplineFormData({
-    required this.disciplineName,
-    required this.description,
-    required this.teacherName,
-  });
-}
-
-class _PeriodFormData {
-  final String studyYear;
-  final int semester;
-  final String startDate;
-  final String endDate;
-
-  const _PeriodFormData({
-    required this.studyYear,
-    required this.semester,
-    required this.startDate,
-    required this.endDate,
-  });
 }
 
 class _StudentFormData {
@@ -1801,60 +1855,49 @@ class _StudentFormData {
   });
 }
 
-FormFieldValidator<String> _requiredValidator(String message) {
-  return (value) {
-    final text = value?.trim() ?? '';
-
-    if (text.isEmpty) {
-      return message;
-    }
-
-    return null;
-  };
-}
-
-String? _studyYearValidator(String? value) {
+String? _requiredTextValidator(
+  String? value, {
+  required String emptyMessage,
+}) {
   final text = value?.trim() ?? '';
-  final pattern = RegExp(r'^\d{4}/\d{4}$');
 
   if (text.isEmpty) {
-    return 'Введите учебный год';
+    return emptyMessage;
   }
 
-  if (!pattern.hasMatch(text)) {
-    return 'Формат учебного года: 2025/2026';
+  if (text.length > 150) {
+    return 'Значение слишком длинное';
   }
 
   return null;
 }
 
-FormFieldValidator<String> _dateValidator(String emptyMessage) {
-  return (value) {
-    final text = value?.trim() ?? '';
+String? _intRangeValidator(
+  String? value, {
+  required String emptyMessage,
+  required int min,
+  required int max,
+}) {
+  final text = value?.trim() ?? '';
 
-    if (text.isEmpty) {
-      return emptyMessage;
-    }
-
-    final pattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
-
-    if (!pattern.hasMatch(text)) {
-      return 'Формат даты: YYYY-MM-DD';
-    }
-
-    if (DateTime.tryParse(text) == null) {
-      return 'Введите корректную дату';
-    }
-
-    return null;
-  };
-}
-
-String? _nullIfEmpty(String? value) {
-  if (value == null) {
-    return null;
+  if (text.isEmpty) {
+    return emptyMessage;
   }
 
+  final number = int.tryParse(text);
+
+  if (number == null) {
+    return 'Введите целое число';
+  }
+
+  if (number < min || number > max) {
+    return 'Введите значение от $min до $max';
+  }
+
+  return null;
+}
+
+String? _nullIfEmpty(String value) {
   final text = value.trim();
 
   if (text.isEmpty) {

@@ -4,6 +4,7 @@ class EducationalDataBundle {
   final List<StudyPeriod> periods;
   final List<Student> students;
   final List<GradeRecord> grades;
+  final List<AttendanceRecord> attendance;
 
   const EducationalDataBundle({
     required this.groups,
@@ -11,6 +12,7 @@ class EducationalDataBundle {
     required this.periods,
     required this.students,
     required this.grades,
+    required this.attendance,
   });
 
   const EducationalDataBundle.empty()
@@ -18,7 +20,8 @@ class EducationalDataBundle {
         disciplines = const [],
         periods = const [],
         students = const [],
-        grades = const [];
+        grades = const [],
+        attendance = const [];
 }
 
 class StudyGroup {
@@ -186,8 +189,61 @@ class GradeRecord {
   String get periodTitle => '$studyYear, семестр $semester';
 }
 
+class AttendanceRecord {
+  final int id;
+  final int attendedCount;
+  final int missedCount;
+  final int totalClasses;
+  final double attendanceRate;
+  final int studentId;
+  final String studentName;
+  final int disciplineId;
+  final String disciplineName;
+  final int periodId;
+  final String studyYear;
+  final int semester;
+
+  const AttendanceRecord({
+    required this.id,
+    required this.attendedCount,
+    required this.missedCount,
+    required this.totalClasses,
+    required this.attendanceRate,
+    required this.studentId,
+    required this.studentName,
+    required this.disciplineId,
+    required this.disciplineName,
+    required this.periodId,
+    required this.studyYear,
+    required this.semester,
+  });
+
+  factory AttendanceRecord.fromJson(Map<String, dynamic> json) {
+    return AttendanceRecord(
+      id: _readRequiredInt(json['id']),
+      attendedCount: _readRequiredInt(json['attendedCount']),
+      missedCount: _readRequiredInt(json['missedCount']),
+      totalClasses: _readRequiredInt(json['totalClasses']),
+      attendanceRate: _readRequiredDouble(json['attendanceRate']),
+      studentId: _readRequiredInt(json['studentId']),
+      studentName: _readString(json['studentName']),
+      disciplineId: _readRequiredInt(json['disciplineId']),
+      disciplineName: _readString(json['disciplineName']),
+      periodId: _readRequiredInt(json['periodId']),
+      studyYear: _readString(json['studyYear']),
+      semester: _readRequiredInt(json['semester']),
+    );
+  }
+
+  String get periodTitle => '$studyYear, семестр $semester';
+}
+
 int _readRequiredInt(dynamic value) {
   return _readInt(value) ?? 0;
+}
+
+double _readRequiredDouble(dynamic value) {
+  return _readDouble(value) ?? 0;
 }
 
 int? _readInt(dynamic value) {
@@ -204,6 +260,22 @@ int? _readInt(dynamic value) {
   }
 
   return int.tryParse(value.toString());
+}
+
+double? _readDouble(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+
+  if (value is double) {
+    return value;
+  }
+
+  if (value is num) {
+    return value.toDouble();
+  }
+
+  return double.tryParse(value.toString().replaceAll(',', '.'));
 }
 
 String _readString(dynamic value) {

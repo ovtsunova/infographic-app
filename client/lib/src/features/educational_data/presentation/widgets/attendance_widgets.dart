@@ -4,17 +4,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:client/src/features/educational_data/data/educational_data_models.dart';
 import 'package:client/src/features/educational_data/presentation/bloc/educational_data_bloc.dart';
 
-class GradesTable extends StatelessWidget {
-  final List<GradeRecord> grades;
+class AttendanceTable extends StatelessWidget {
+  final List<AttendanceRecord> attendance;
   final List<Student> students;
   final List<Discipline> disciplines;
   final List<StudyPeriod> periods;
   final bool isAdmin;
   final bool isBusy;
 
-  const GradesTable({
+  const AttendanceTable({
     super.key,
-    required this.grades,
+    required this.attendance,
     required this.students,
     required this.disciplines,
     required this.periods,
@@ -24,10 +24,10 @@ class GradesTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (grades.isEmpty) {
+    if (attendance.isEmpty) {
       return const Center(
         child: Text(
-          'Оценки пока отсутствуют.',
+          'Записи посещаемости пока отсутствуют.',
           style: TextStyle(
             color: Color(0xFF6B7280),
           ),
@@ -46,21 +46,23 @@ class GradesTable extends StatelessWidget {
               const DataColumn(label: Text('Студент')),
               const DataColumn(label: Text('Дисциплина')),
               const DataColumn(label: Text('Период')),
-              const DataColumn(label: Text('Оценка')),
-              const DataColumn(label: Text('Тип контроля')),
-              const DataColumn(label: Text('Дата')),
+              const DataColumn(label: Text('Посещено')),
+              const DataColumn(label: Text('Пропущено')),
+              const DataColumn(label: Text('Всего')),
+              const DataColumn(label: Text('% посещаемости')),
               if (isAdmin) const DataColumn(label: Text('Действия')),
             ],
-            rows: grades.map((grade) {
+            rows: attendance.map((record) {
               return DataRow(
                 cells: [
-                  DataCell(Text(grade.id.toString())),
-                  DataCell(Text(grade.studentName)),
-                  DataCell(Text(grade.disciplineName)),
-                  DataCell(Text(grade.periodTitle)),
-                  DataCell(Text(grade.gradeValue.toString())),
-                  DataCell(Text(grade.controlType)),
-                  DataCell(Text(grade.gradeDate ?? '—')),
+                  DataCell(Text(record.id.toString())),
+                  DataCell(Text(record.studentName)),
+                  DataCell(Text(record.disciplineName)),
+                  DataCell(Text(record.periodTitle)),
+                  DataCell(Text(record.attendedCount.toString())),
+                  DataCell(Text(record.missedCount.toString())),
+                  DataCell(Text(record.totalClasses.toString())),
+                  DataCell(Text('${record.attendanceRate.toStringAsFixed(2)}%')),
                   if (isAdmin)
                     DataCell(
                       Row(
@@ -70,14 +72,14 @@ class GradesTable extends StatelessWidget {
                             tooltip: 'Редактировать',
                             onPressed: isBusy
                                 ? null
-                                : () => _openEditDialog(context, grade),
+                                : () => _openEditDialog(context, record),
                             icon: const Icon(Icons.edit_rounded),
                           ),
                           IconButton(
                             tooltip: 'Удалить',
                             onPressed: isBusy
                                 ? null
-                                : () => _openDeleteDialog(context, grade),
+                                : () => _openDeleteDialog(context, record),
                             icon: const Icon(Icons.delete_rounded),
                           ),
                         ],
@@ -94,12 +96,12 @@ class GradesTable extends StatelessWidget {
 
   Future<void> _openEditDialog(
     BuildContext context,
-    GradeRecord grade,
+    AttendanceRecord record,
   ) async {
-    final result = await showDialog<GradeFormData>(
+    final result = await showDialog<AttendanceFormData>(
       context: context,
-      builder: (_) => GradeFormDialog(
-        grade: grade,
+      builder: (_) => AttendanceFormDialog(
+        record: record,
         students: students,
         disciplines: disciplines,
         periods: periods,
@@ -111,30 +113,30 @@ class GradesTable extends StatelessWidget {
     }
 
     context.read<EducationalDataBloc>().add(
-          EducationalGradeUpdateRequested(
-            id: grade.id,
+          EducationalAttendanceUpdateRequested(
+            id: record.id,
             studentId: result.studentId,
             disciplineId: result.disciplineId,
             periodId: result.periodId,
-            gradeValue: result.gradeValue,
-            controlType: result.controlType,
-            gradeDate: result.gradeDate ?? '',
+            attendedCount: result.attendedCount,
+            missedCount: result.missedCount,
           ),
         );
   }
 
   Future<void> _openDeleteDialog(
     BuildContext context,
-    GradeRecord grade,
+    AttendanceRecord record,
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Удаление оценки'),
+          title: const Text('Удаление посещаемости'),
           content: Text(
-            'Вы действительно хотите удалить оценку студента '
-            '"${grade.studentName}" по дисциплине "${grade.disciplineName}"?',
+            'Вы действительно хотите удалить запись посещаемости '
+            'студента "${record.studentName}" по дисциплине '
+            '"${record.disciplineName}"?',
           ),
           actions: [
             TextButton(
@@ -155,78 +157,72 @@ class GradesTable extends StatelessWidget {
     }
 
     context.read<EducationalDataBloc>().add(
-          EducationalGradeDeleteRequested(id: grade.id),
+          EducationalAttendanceDeleteRequested(id: record.id),
         );
   }
 }
 
-class GradeFormDialog extends StatefulWidget {
-  final GradeRecord? grade;
+class AttendanceFormDialog extends StatefulWidget {
+  final AttendanceRecord? record;
   final List<Student> students;
   final List<Discipline> disciplines;
   final List<StudyPeriod> periods;
 
-  const GradeFormDialog({
+  const AttendanceFormDialog({
     super.key,
-    this.grade,
+    this.record,
     required this.students,
     required this.disciplines,
     required this.periods,
   });
 
   @override
-  State<GradeFormDialog> createState() => _GradeFormDialogState();
+  State<AttendanceFormDialog> createState() => _AttendanceFormDialogState();
 }
 
-class _GradeFormDialogState extends State<GradeFormDialog> {
+class _AttendanceFormDialogState extends State<AttendanceFormDialog> {
   final _formKey = GlobalKey<FormState>();
 
-  late final TextEditingController _gradeValueController;
-  late final TextEditingController _controlTypeController;
-  late final TextEditingController _gradeDateController;
+  late final TextEditingController _attendedCountController;
+  late final TextEditingController _missedCountController;
 
   int? _selectedStudentId;
   int? _selectedDisciplineId;
   int? _selectedPeriodId;
 
-  bool get _isEditMode => widget.grade != null;
+  bool get _isEditMode => widget.record != null;
 
   @override
   void initState() {
     super.initState();
 
-    final grade = widget.grade;
+    final record = widget.record;
 
-    _selectedStudentId = _hasStudent(grade?.studentId)
-        ? grade?.studentId
+    _selectedStudentId = _hasStudent(record?.studentId)
+        ? record?.studentId
         : null;
 
-    _selectedDisciplineId = _hasDiscipline(grade?.disciplineId)
-        ? grade?.disciplineId
+    _selectedDisciplineId = _hasDiscipline(record?.disciplineId)
+        ? record?.disciplineId
         : null;
 
-    _selectedPeriodId = _hasPeriod(grade?.periodId)
-        ? grade?.periodId
+    _selectedPeriodId = _hasPeriod(record?.periodId)
+        ? record?.periodId
         : null;
 
-    _gradeValueController = TextEditingController(
-      text: grade?.gradeValue.toString() ?? '',
+    _attendedCountController = TextEditingController(
+      text: record?.attendedCount.toString() ?? '',
     );
 
-    _controlTypeController = TextEditingController(
-      text: grade?.controlType ?? '',
-    );
-
-    _gradeDateController = TextEditingController(
-      text: grade?.gradeDate ?? '',
+    _missedCountController = TextEditingController(
+      text: record?.missedCount.toString() ?? '',
     );
   }
 
   @override
   void dispose() {
-    _gradeValueController.dispose();
-    _controlTypeController.dispose();
-    _gradeDateController.dispose();
+    _attendedCountController.dispose();
+    _missedCountController.dispose();
     super.dispose();
   }
 
@@ -264,23 +260,24 @@ class _GradeFormDialogState extends State<GradeFormDialog> {
     final studentId = _selectedStudentId;
     final disciplineId = _selectedDisciplineId;
     final periodId = _selectedPeriodId;
-    final gradeValue = int.tryParse(_gradeValueController.text.trim());
+    final attendedCount = int.tryParse(_attendedCountController.text.trim());
+    final missedCount = int.tryParse(_missedCountController.text.trim());
 
     if (studentId == null ||
         disciplineId == null ||
         periodId == null ||
-        gradeValue == null) {
+        attendedCount == null ||
+        missedCount == null) {
       return;
     }
 
     Navigator.of(context).pop(
-      GradeFormData(
+      AttendanceFormData(
         studentId: studentId,
         disciplineId: disciplineId,
         periodId: periodId,
-        gradeValue: gradeValue,
-        controlType: _controlTypeController.text.trim(),
-        gradeDate: _nullIfEmpty(_gradeDateController.text),
+        attendedCount: attendedCount,
+        missedCount: missedCount,
       ),
     );
   }
@@ -289,7 +286,9 @@ class _GradeFormDialogState extends State<GradeFormDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-        _isEditMode ? 'Редактирование оценки' : 'Добавление оценки',
+        _isEditMode
+            ? 'Редактирование посещаемости'
+            : 'Добавление посещаемости',
       ),
       content: SizedBox(
         width: 560,
@@ -375,51 +374,29 @@ class _GradeFormDialogState extends State<GradeFormDialog> {
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
-                  controller: _gradeValueController,
+                  controller: _attendedCountController,
                   decoration: const InputDecoration(
-                    labelText: 'Оценка',
-                    hintText: 'Например: 5',
+                    labelText: 'Количество посещенных занятий',
+                    hintText: 'Например: 24',
                   ),
                   keyboardType: TextInputType.number,
-                  validator: _gradeValueValidator,
+                  validator: (value) => _nonNegativeIntValidator(
+                    value,
+                    emptyMessage: 'Введите количество посещенных занятий',
+                  ),
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
-                  controller: _controlTypeController,
+                  controller: _missedCountController,
                   decoration: const InputDecoration(
-                    labelText: 'Тип контроля',
-                    hintText: 'Например: Экзамен',
+                    labelText: 'Количество пропущенных занятий',
+                    hintText: 'Например: 3',
                   ),
-                  validator: (value) {
-                    final text = value?.trim() ?? '';
-
-                    if (text.isEmpty) {
-                      return 'Введите тип контроля';
-                    }
-
-                    if (text.length > 100) {
-                      return 'Тип контроля слишком длинный';
-                    }
-
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: _gradeDateController,
-                  decoration: const InputDecoration(
-                    labelText: 'Дата оценки',
-                    hintText: 'Например: 2026-04-27',
+                  keyboardType: TextInputType.number,
+                  validator: (value) => _nonNegativeIntValidator(
+                    value,
+                    emptyMessage: 'Введите количество пропущенных занятий',
                   ),
-                  validator: (value) {
-                    final text = value?.trim() ?? '';
-
-                    if (text.isEmpty) {
-                      return 'Введите дату оценки';
-                    }
-
-                    return null;
-                  },
                 ),
               ],
             ),
@@ -440,29 +417,30 @@ class _GradeFormDialogState extends State<GradeFormDialog> {
   }
 }
 
-class GradeFormData {
+class AttendanceFormData {
   final int studentId;
   final int disciplineId;
   final int periodId;
-  final int gradeValue;
-  final String controlType;
-  final String? gradeDate;
+  final int attendedCount;
+  final int missedCount;
 
-  const GradeFormData({
+  const AttendanceFormData({
     required this.studentId,
     required this.disciplineId,
     required this.periodId,
-    required this.gradeValue,
-    required this.controlType,
-    required this.gradeDate,
+    required this.attendedCount,
+    required this.missedCount,
   });
 }
 
-String? _gradeValueValidator(String? value) {
+String? _nonNegativeIntValidator(
+  String? value, {
+  required String emptyMessage,
+}) {
   final text = value?.trim() ?? '';
 
   if (text.isEmpty) {
-    return 'Введите оценку';
+    return emptyMessage;
   }
 
   final number = int.tryParse(text);
@@ -471,19 +449,13 @@ String? _gradeValueValidator(String? value) {
     return 'Введите целое число';
   }
 
-  if (number < 2 || number > 5) {
-    return 'Оценка должна быть от 2 до 5';
+  if (number < 0) {
+    return 'Значение не может быть отрицательным';
+  }
+
+  if (number > 999) {
+    return 'Значение не должно превышать 999';
   }
 
   return null;
-}
-
-String? _nullIfEmpty(String value) {
-  final text = value.trim();
-
-  if (text.isEmpty) {
-    return null;
-  }
-
-  return text;
 }

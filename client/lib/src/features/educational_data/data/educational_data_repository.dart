@@ -19,23 +19,32 @@ class EducationalDataRepository {
         _apiClient.dio.get('/periods'),
         _apiClient.dio.get('/students'),
         _apiClient.dio.get('/grades'),
+        _apiClient.dio.get('/attendance'),
       ]);
 
-      final groups =
-          _readDataList(responses[0].data).map(StudyGroup.fromJson).toList();
+      final groups = _readDataList(responses[0].data)
+          .map(StudyGroup.fromJson)
+          .toList();
 
       final disciplines = _readDataList(responses[1].data)
           .map(Discipline.fromJson)
           .toList();
 
-      final periods =
-          _readDataList(responses[2].data).map(StudyPeriod.fromJson).toList();
+      final periods = _readDataList(responses[2].data)
+          .map(StudyPeriod.fromJson)
+          .toList();
 
-      final students =
-          _readDataList(responses[3].data).map(Student.fromJson).toList();
+      final students = _readDataList(responses[3].data)
+          .map(Student.fromJson)
+          .toList();
 
-      final grades =
-          _readDataList(responses[4].data).map(GradeRecord.fromJson).toList();
+      final grades = _readDataList(responses[4].data)
+          .map(GradeRecord.fromJson)
+          .toList();
+
+      final attendance = _readDataList(responses[5].data)
+          .map(AttendanceRecord.fromJson)
+          .toList();
 
       return EducationalDataBundle(
         groups: groups,
@@ -43,6 +52,7 @@ class EducationalDataRepository {
         periods: periods,
         students: students,
         grades: grades,
+        attendance: attendance,
       );
     } on DioException catch (error) {
       throw EducationalDataException(_readErrorMessage(error));
@@ -347,6 +357,69 @@ class EducationalDataRepository {
   }) async {
     try {
       await _apiClient.dio.delete('/grades/$id');
+    } on DioException catch (error) {
+      throw EducationalDataException(_readErrorMessage(error));
+    } catch (error) {
+      throw EducationalDataException(error.toString());
+    }
+  }
+
+  Future<void> createAttendance({
+    required int studentId,
+    required int disciplineId,
+    required int periodId,
+    required int attendedCount,
+    required int missedCount,
+  }) async {
+    try {
+      await _apiClient.dio.post(
+        '/attendance',
+        data: {
+          'studentId': studentId,
+          'disciplineId': disciplineId,
+          'periodId': periodId,
+          'attendedCount': attendedCount,
+          'missedCount': missedCount,
+        },
+      );
+    } on DioException catch (error) {
+      throw EducationalDataException(_readErrorMessage(error));
+    } catch (error) {
+      throw EducationalDataException(error.toString());
+    }
+  }
+
+  Future<void> updateAttendance({
+    required int id,
+    required int studentId,
+    required int disciplineId,
+    required int periodId,
+    required int attendedCount,
+    required int missedCount,
+  }) async {
+    try {
+      await _apiClient.dio.put(
+        '/attendance/$id',
+        data: {
+          'studentId': studentId,
+          'disciplineId': disciplineId,
+          'periodId': periodId,
+          'attendedCount': attendedCount,
+          'missedCount': missedCount,
+        },
+      );
+    } on DioException catch (error) {
+      throw EducationalDataException(_readErrorMessage(error));
+    } catch (error) {
+      throw EducationalDataException(error.toString());
+    }
+  }
+
+  Future<void> deleteAttendance({
+    required int id,
+  }) async {
+    try {
+      await _apiClient.dio.delete('/attendance/$id');
     } on DioException catch (error) {
       throw EducationalDataException(_readErrorMessage(error));
     } catch (error) {
