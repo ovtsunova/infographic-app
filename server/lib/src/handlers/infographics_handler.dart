@@ -163,11 +163,15 @@ class InfographicsHandler {
       }
 
       if (parameters == null || parameters is! Map) {
-        return JsonResponse.badRequest('Передайте параметры построения инфографики');
+        return JsonResponse.badRequest(
+          'Передайте параметры построения инфографики',
+        );
       }
 
       if (resultData == null || resultData is! Map) {
-        return JsonResponse.badRequest('Передайте данные результата инфографики');
+        return JsonResponse.badRequest(
+          'Передайте данные результата инфографики',
+        );
       }
 
       final conn = await Database.connection;
@@ -178,8 +182,8 @@ class InfographicsHandler {
           CALL SaveInfographic(
             @title,
             @chartType,
-            @parameters,
-            @resultData,
+            CAST(@parameters AS jsonb),
+            CAST(@resultData AS jsonb),
             @accountId,
             @templateId
           )

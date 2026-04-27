@@ -125,7 +125,10 @@ class AppRouter {
       )(request);
     });
 
-    router.delete('/api/disciplines/<id|[0-9]+>', (Request request, String id) {
+    router.delete('/api/disciplines/<id|[0-9]+>', (
+      Request request,
+      String id,
+    ) {
       return _protect(
         (protectedRequest) => disciplinesHandler.delete(protectedRequest, id),
         authMiddleware.requireAdmin(),
@@ -251,7 +254,10 @@ class AppRouter {
       )(request);
     });
 
-    router.delete('/api/attendance/<id|[0-9]+>', (Request request, String id) {
+    router.delete('/api/attendance/<id|[0-9]+>', (
+      Request request,
+      String id,
+    ) {
       return _protect(
         (protectedRequest) => attendanceHandler.delete(protectedRequest, id),
         authMiddleware.requireAdmin(),
