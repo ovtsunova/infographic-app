@@ -22,9 +22,7 @@ class Database {
         username: AppEnv.dbUser,
         password: AppEnv.dbPassword,
       ),
-      settings: const ConnectionSettings(
-        sslMode: SslMode.disable,
-      ),
+      settings: const ConnectionSettings(sslMode: SslMode.disable),
     );
 
     return _connection!;
@@ -34,9 +32,7 @@ class Database {
     try {
       final conn = await connection;
 
-      final result = await conn.execute(
-        'SELECT 1 AS result',
-      );
+      final result = await conn.execute('SELECT 1 AS result');
 
       return result.isNotEmpty && result.first[0] == 1;
     } catch (_) {

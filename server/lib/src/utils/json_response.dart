@@ -10,27 +10,17 @@ class JsonResponse {
   };
 
   static Response ok(Object data) {
-    return Response.ok(
-      jsonEncode(data),
-      headers: defaultHeaders,
-    );
+    return Response.ok(jsonEncode(data), headers: defaultHeaders);
   }
 
   static Response created(Object data) {
-    return Response(
-      201,
-      body: jsonEncode(data),
-      headers: defaultHeaders,
-    );
+    return Response(201, body: jsonEncode(data), headers: defaultHeaders);
   }
 
   static Response badRequest(String message) {
     return Response(
       400,
-      body: jsonEncode({
-        'success': false,
-        'message': message,
-      }),
+      body: jsonEncode({'success': false, 'message': message}),
       headers: defaultHeaders,
     );
   }
@@ -38,10 +28,7 @@ class JsonResponse {
   static Response unauthorized(String message) {
     return Response(
       401,
-      body: jsonEncode({
-        'success': false,
-        'message': message,
-      }),
+      body: jsonEncode({'success': false, 'message': message}),
       headers: defaultHeaders,
     );
   }
@@ -49,10 +36,7 @@ class JsonResponse {
   static Response forbidden(String message) {
     return Response(
       403,
-      body: jsonEncode({
-        'success': false,
-        'message': message,
-      }),
+      body: jsonEncode({'success': false, 'message': message}),
       headers: defaultHeaders,
     );
   }
@@ -60,10 +44,7 @@ class JsonResponse {
   static Response notFound(String message) {
     return Response(
       404,
-      body: jsonEncode({
-        'success': false,
-        'message': message,
-      }),
+      body: jsonEncode({'success': false, 'message': message}),
       headers: defaultHeaders,
     );
   }

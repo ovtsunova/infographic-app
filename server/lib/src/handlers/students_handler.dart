@@ -11,8 +11,7 @@ class StudentsHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT
           s.ID_Student AS id,
           s.LastName AS last_name,
@@ -24,8 +23,7 @@ class StudentsHandler {
         FROM Students s
         JOIN StudyGroups g ON s.Group_ID = g.ID_Group
         ORDER BY s.ID_Student
-        ''',
-      );
+        ''');
 
       final students = result.map((row) {
         final data = row.toColumnMap();
@@ -41,10 +39,7 @@ class StudentsHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': students,
-      });
+      return JsonResponse.ok({'success': true, 'data': students});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -61,8 +56,7 @@ class StudentsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           SELECT
             s.ID_Student AS id,
             s.LastName AS last_name,
@@ -74,11 +68,8 @@ class StudentsHandler {
           FROM Students s
           JOIN StudyGroups g ON s.Group_ID = g.ID_Group
           WHERE s.ID_Student = @id
-          ''',
-        ),
-        parameters: {
-          'id': studentId,
-        },
+          '''),
+        parameters: {'id': studentId},
       );
 
       if (result.isEmpty) {
@@ -127,8 +118,7 @@ class StudentsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           INSERT INTO Students (
             LastName,
             FirstName,
@@ -150,8 +140,7 @@ class StudentsHandler {
             Patronymic AS patronymic,
             RecordBookNumber AS record_book_number,
             Group_ID AS group_id
-          ''',
-        ),
+          '''),
         parameters: {
           'lastName': lastName,
           'firstName': firstName,
@@ -209,8 +198,7 @@ class StudentsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           UPDATE Students
           SET
             LastName = @lastName,
@@ -226,8 +214,7 @@ class StudentsHandler {
             Patronymic AS patronymic,
             RecordBookNumber AS record_book_number,
             Group_ID AS group_id
-          ''',
-        ),
+          '''),
         parameters: {
           'id': studentId,
           'lastName': lastName,
@@ -272,16 +259,12 @@ class StudentsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           DELETE FROM Students
           WHERE ID_Student = @id
           RETURNING ID_Student
-          ''',
-        ),
-        parameters: {
-          'id': studentId,
-        },
+          '''),
+        parameters: {'id': studentId},
       );
 
       if (result.isEmpty) {

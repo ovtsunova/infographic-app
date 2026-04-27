@@ -4,9 +4,8 @@ import '../services/token_service.dart';
 import '../utils/json_response.dart';
 
 class AuthMiddleware {
-  AuthMiddleware({
-    required TokenService tokenService,
-  }) : _tokenService = tokenService;
+  AuthMiddleware({required TokenService tokenService})
+    : _tokenService = tokenService;
 
   final TokenService _tokenService;
 
@@ -16,9 +15,7 @@ class AuthMiddleware {
         final authHeader = request.headers['authorization'];
 
         if (authHeader == null || authHeader.trim().isEmpty) {
-          return JsonResponse.unauthorized(
-            'Отсутствует токен авторизации',
-          );
+          return JsonResponse.unauthorized('Отсутствует токен авторизации');
         }
 
         if (!authHeader.startsWith('Bearer ')) {
@@ -37,10 +34,7 @@ class AuthMiddleware {
         }
 
         final updatedRequest = request.change(
-          context: {
-            ...request.context,
-            'auth': payload,
-          },
+          context: {...request.context, 'auth': payload},
         );
 
         return innerHandler(updatedRequest);
@@ -54,9 +48,7 @@ class AuthMiddleware {
         final authHeader = request.headers['authorization'];
 
         if (authHeader == null || authHeader.trim().isEmpty) {
-          return JsonResponse.unauthorized(
-            'Отсутствует токен авторизации',
-          );
+          return JsonResponse.unauthorized('Отсутствует токен авторизации');
         }
 
         if (!authHeader.startsWith('Bearer ')) {
@@ -83,10 +75,7 @@ class AuthMiddleware {
         }
 
         final updatedRequest = request.change(
-          context: {
-            ...request.context,
-            'auth': payload,
-          },
+          context: {...request.context, 'auth': payload},
         );
 
         return innerHandler(updatedRequest);

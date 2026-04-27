@@ -11,8 +11,7 @@ class PeriodsHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT
           ID_Period AS id,
           StudyYear AS study_year,
@@ -21,8 +20,7 @@ class PeriodsHandler {
           EndDate AS end_date
         FROM StudyPeriods
         ORDER BY StudyYear, Semester
-        ''',
-      );
+        ''');
 
       final periods = result.map((row) {
         final data = row.toColumnMap();
@@ -36,10 +34,7 @@ class PeriodsHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': periods,
-      });
+      return JsonResponse.ok({'success': true, 'data': periods});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -58,8 +53,7 @@ class PeriodsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           SELECT
             ID_Period AS id,
             StudyYear AS study_year,
@@ -68,17 +62,12 @@ class PeriodsHandler {
             EndDate AS end_date
           FROM StudyPeriods
           WHERE ID_Period = @id
-          ''',
-        ),
-        parameters: {
-          'id': periodId,
-        },
+          '''),
+        parameters: {'id': periodId},
       );
 
       if (result.isEmpty) {
-        return JsonResponse.notFound(
-          'Учебный период не найден',
-        );
+        return JsonResponse.notFound('Учебный период не найден');
       }
 
       final data = result.first.toColumnMap();
@@ -124,8 +113,7 @@ class PeriodsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           INSERT INTO StudyPeriods (
             StudyYear,
             Semester,
@@ -144,8 +132,7 @@ class PeriodsHandler {
             Semester AS semester,
             StartDate AS start_date,
             EndDate AS end_date
-          ''',
-        ),
+          '''),
         parameters: {
           'studyYear': studyYear,
           'semester': semester,
@@ -206,8 +193,7 @@ class PeriodsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           UPDATE StudyPeriods
           SET
             StudyYear = @studyYear,
@@ -221,8 +207,7 @@ class PeriodsHandler {
             Semester AS semester,
             StartDate AS start_date,
             EndDate AS end_date
-          ''',
-        ),
+          '''),
         parameters: {
           'id': periodId,
           'studyYear': studyYear,
@@ -233,9 +218,7 @@ class PeriodsHandler {
       );
 
       if (result.isEmpty) {
-        return JsonResponse.notFound(
-          'Учебный период не найден',
-        );
+        return JsonResponse.notFound('Учебный период не найден');
       }
 
       final data = result.first.toColumnMap();
@@ -269,22 +252,16 @@ class PeriodsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           DELETE FROM StudyPeriods
           WHERE ID_Period = @id
           RETURNING ID_Period
-          ''',
-        ),
-        parameters: {
-          'id': periodId,
-        },
+          '''),
+        parameters: {'id': periodId},
       );
 
       if (result.isEmpty) {
-        return JsonResponse.notFound(
-          'Учебный период не найден',
-        );
+        return JsonResponse.notFound('Учебный период не найден');
       }
 
       return JsonResponse.ok({

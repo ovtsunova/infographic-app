@@ -8,9 +8,8 @@ import '../services/token_service.dart';
 import '../utils/json_response.dart';
 
 class AuthHandler {
-  AuthHandler({
-    required TokenService tokenService,
-  }) : _tokenService = tokenService;
+  AuthHandler({required TokenService tokenService})
+    : _tokenService = tokenService;
 
   final TokenService _tokenService;
 
@@ -36,8 +35,7 @@ class AuthHandler {
       final conn = await Database.connection;
 
       await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           CALL RegisterUser(
             @email,
             @password,
@@ -45,8 +43,7 @@ class AuthHandler {
             @firstName,
             @patronymic
           )
-          ''',
-        ),
+          '''),
         parameters: {
           'email': email,
           'password': password,
@@ -73,24 +70,17 @@ class AuthHandler {
       final password = _readString(body, 'password');
 
       if (email.isEmpty || password.isEmpty) {
-        return JsonResponse.badRequest(
-          'Введите email и пароль',
-        );
+        return JsonResponse.badRequest('Введите email и пароль');
       }
 
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           SELECT *
           FROM CheckUserPassword(@email, @password)
-          ''',
-        ),
-        parameters: {
-          'email': email,
-          'password': password,
-        },
+          '''),
+        parameters: {'email': email, 'password': password},
       );
 
       if (result.isEmpty) {
@@ -104,9 +94,7 @@ class AuthHandler {
       final isBlocked = row['is_blocked'] as bool;
 
       if (isBlocked) {
-        return JsonResponse.forbidden(
-          'Учетная запись заблокирована',
-        );
+        return JsonResponse.forbidden('Учетная запись заблокирована');
       }
 
       final accountId = row['account_id'] as int;

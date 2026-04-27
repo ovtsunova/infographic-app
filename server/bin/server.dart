@@ -20,9 +20,7 @@ void main() async {
     AppEnv.serverPort,
   );
 
-  print(
-    'Сервер запущен: http://${server.address.host}:${server.port}',
-  );
+  print('Сервер запущен: http://${server.address.host}:${server.port}');
 }
 
 Middleware _corsMiddleware() {
@@ -36,20 +34,12 @@ Middleware _corsMiddleware() {
   return (Handler innerHandler) {
     return (Request request) async {
       if (request.method == 'OPTIONS') {
-        return Response.ok(
-          '',
-          headers: headers,
-        );
+        return Response.ok('', headers: headers);
       }
 
       final response = await innerHandler(request);
 
-      return response.change(
-        headers: {
-          ...response.headers,
-          ...headers,
-        },
-      );
+      return response.change(headers: {...response.headers, ...headers});
     };
   };
 }

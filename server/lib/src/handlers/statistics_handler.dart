@@ -9,13 +9,11 @@ class StatisticsHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT *
         FROM GroupStatisticsView
         ORDER BY "Код группы"
-        ''',
-      );
+        ''');
 
       final data = result.map((row) {
         final item = row.toColumnMap();
@@ -34,10 +32,7 @@ class StatisticsHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': data,
-      });
+      return JsonResponse.ok({'success': true, 'data': data});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -45,8 +40,12 @@ class StatisticsHandler {
 
   Future<Response> getSummary(Request request) async {
     try {
-      final groupId = int.tryParse(request.url.queryParameters['groupId'] ?? '');
-      final periodId = int.tryParse(request.url.queryParameters['periodId'] ?? '');
+      final groupId = int.tryParse(
+        request.url.queryParameters['groupId'] ?? '',
+      );
+      final periodId = int.tryParse(
+        request.url.queryParameters['periodId'] ?? '',
+      );
 
       if (groupId == null || periodId == null) {
         return JsonResponse.badRequest(
@@ -60,30 +59,21 @@ class StatisticsHandler {
         Sql.named(
           'SELECT get_group_avg_grade_period(@groupId, @periodId) AS value',
         ),
-        parameters: {
-          'groupId': groupId,
-          'periodId': periodId,
-        },
+        parameters: {'groupId': groupId, 'periodId': periodId},
       );
 
       final successResult = await conn.execute(
         Sql.named(
           'SELECT get_group_success_rate_period(@groupId, @periodId) AS value',
         ),
-        parameters: {
-          'groupId': groupId,
-          'periodId': periodId,
-        },
+        parameters: {'groupId': groupId, 'periodId': periodId},
       );
 
       final attendanceResult = await conn.execute(
         Sql.named(
           'SELECT get_group_attendance_rate_period(@groupId, @periodId) AS value',
         ),
-        parameters: {
-          'groupId': groupId,
-          'periodId': periodId,
-        },
+        parameters: {'groupId': groupId, 'periodId': periodId},
       );
 
       return JsonResponse.ok({
@@ -103,10 +93,15 @@ class StatisticsHandler {
 
   Future<Response> getGradeDistribution(Request request) async {
     try {
-      final groupId = int.tryParse(request.url.queryParameters['groupId'] ?? '');
-      final disciplineId =
-          int.tryParse(request.url.queryParameters['disciplineId'] ?? '');
-      final periodId = int.tryParse(request.url.queryParameters['periodId'] ?? '');
+      final groupId = int.tryParse(
+        request.url.queryParameters['groupId'] ?? '',
+      );
+      final disciplineId = int.tryParse(
+        request.url.queryParameters['disciplineId'] ?? '',
+      );
+      final periodId = int.tryParse(
+        request.url.queryParameters['periodId'] ?? '',
+      );
 
       if (groupId == null || disciplineId == null || periodId == null) {
         return JsonResponse.badRequest(
@@ -117,16 +112,14 @@ class StatisticsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           SELECT *
           FROM get_grade_distribution(
             @groupId,
             @disciplineId,
             @periodId
           )
-          ''',
-        ),
+          '''),
         parameters: {
           'groupId': groupId,
           'disciplineId': disciplineId,
@@ -145,10 +138,7 @@ class StatisticsHandler {
 
       return JsonResponse.ok({
         'success': true,
-        'data': {
-          'labels': labels,
-          'values': values,
-        },
+        'data': {'labels': labels, 'values': values},
       });
     } catch (error) {
       return JsonResponse.serverError(error);

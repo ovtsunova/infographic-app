@@ -125,10 +125,7 @@ class AppRouter {
       )(request);
     });
 
-    router.delete('/api/disciplines/<id|[0-9]+>', (
-      Request request,
-      String id,
-    ) {
+    router.delete('/api/disciplines/<id|[0-9]+>', (Request request, String id) {
       return _protect(
         (protectedRequest) => disciplinesHandler.delete(protectedRequest, id),
         authMiddleware.requireAdmin(),
@@ -254,10 +251,7 @@ class AppRouter {
       )(request);
     });
 
-    router.delete('/api/attendance/<id|[0-9]+>', (
-      Request request,
-      String id,
-    ) {
+    router.delete('/api/attendance/<id|[0-9]+>', (Request request, String id) {
       return _protect(
         (protectedRequest) => attendanceHandler.delete(protectedRequest, id),
         authMiddleware.requireAdmin(),
@@ -278,10 +272,7 @@ class AppRouter {
 
     router.get(
       '/api/statistics/summary',
-      _protect(
-        statisticsHandler.getSummary,
-        authMiddleware.requireAuth(),
-      ),
+      _protect(statisticsHandler.getSummary, authMiddleware.requireAuth()),
     );
 
     router.get(
@@ -298,10 +289,7 @@ class AppRouter {
 
     router.get(
       '/api/infographics/templates',
-      _protect(
-        infographicsHandler.getTemplates,
-        authMiddleware.requireAuth(),
-      ),
+      _protect(infographicsHandler.getTemplates, authMiddleware.requireAuth()),
     );
 
     router.get(
@@ -314,18 +302,12 @@ class AppRouter {
 
     router.get(
       '/api/infographics',
-      _protect(
-        infographicsHandler.getAll,
-        authMiddleware.requireAdmin(),
-      ),
+      _protect(infographicsHandler.getAll, authMiddleware.requireAdmin()),
     );
 
     router.post(
       '/api/infographics',
-      _protect(
-        infographicsHandler.save,
-        authMiddleware.requireAuth(),
-      ),
+      _protect(infographicsHandler.save, authMiddleware.requireAuth()),
     );
 
     router.delete('/api/infographics/<id|[0-9]+>', (
@@ -352,10 +334,7 @@ class AppRouter {
       _protect(adminHandler.getUsers, authMiddleware.requireAdmin()),
     );
 
-    router.get('/api/admin/users/<id|[0-9]+>', (
-      Request request,
-      String id,
-    ) {
+    router.get('/api/admin/users/<id|[0-9]+>', (Request request, String id) {
       return _protect(
         (protectedRequest) => adminHandler.getUserById(protectedRequest, id),
         authMiddleware.requireAdmin(),
@@ -416,10 +395,8 @@ class AppRouter {
     FutureOr<Response> Function(Request request) handler,
     Middleware middleware,
   ) {
-    return middleware(
-      (Request request) async {
-        return handler(request);
-      },
-    );
+    return middleware((Request request) async {
+      return handler(request);
+    });
   }
 }

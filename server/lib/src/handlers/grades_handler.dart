@@ -11,8 +11,7 @@ class GradesHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT
           gr.ID_Grade AS id,
           gr.GradeValue AS grade_value,
@@ -30,8 +29,7 @@ class GradesHandler {
         JOIN Disciplines d ON gr.Discipline_ID = d.ID_Discipline
         JOIN StudyPeriods p ON gr.Period_ID = p.ID_Period
         ORDER BY gr.ID_Grade
-        ''',
-      );
+        ''');
 
       final grades = result.map((row) {
         final data = row.toColumnMap();
@@ -51,10 +49,7 @@ class GradesHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': grades,
-      });
+      return JsonResponse.ok({'success': true, 'data': grades});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -90,8 +85,7 @@ class GradesHandler {
       final conn = await Database.connection;
 
       await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           CALL AddGrade(
             @studentId,
             @disciplineId,
@@ -100,8 +94,7 @@ class GradesHandler {
             @controlType,
             @gradeDate
           )
-          ''',
-        ),
+          '''),
         parameters: {
           'studentId': studentId,
           'disciplineId': disciplineId,
@@ -153,14 +146,15 @@ class GradesHandler {
       final gradeDate = DateTime.tryParse(gradeDateText);
 
       if (gradeDate == null) {
-        return JsonResponse.badRequest('Дата оценки должна быть в формате YYYY-MM-DD');
+        return JsonResponse.badRequest(
+          'Дата оценки должна быть в формате YYYY-MM-DD',
+        );
       }
 
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           UPDATE Grades
           SET
             Student_ID = @studentId,
@@ -171,8 +165,7 @@ class GradesHandler {
             GradeDate = @gradeDate
           WHERE ID_Grade = @id
           RETURNING ID_Grade AS id
-          ''',
-        ),
+          '''),
         parameters: {
           'id': gradeId,
           'studentId': studentId,
@@ -208,16 +201,12 @@ class GradesHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           DELETE FROM Grades
           WHERE ID_Grade = @id
           RETURNING ID_Grade
-          ''',
-        ),
-        parameters: {
-          'id': gradeId,
-        },
+          '''),
+        parameters: {'id': gradeId},
       );
 
       if (result.isEmpty) {

@@ -6,13 +6,13 @@ import 'package:test/test.dart';
 void main() {
   group('JsonResponse', () {
     test('ok returns success response with json body', () async {
-      final response = JsonResponse.ok({
-        'success': true,
-        'message': 'ok',
-      });
+      final response = JsonResponse.ok({'success': true, 'message': 'ok'});
 
       expect(response.statusCode, 200);
-      expect(response.headers['Content-Type'], 'application/json; charset=utf-8');
+      expect(
+        response.headers['Content-Type'],
+        'application/json; charset=utf-8',
+      );
 
       final body = jsonDecode(await response.readAsString());
 
@@ -42,4 +42,4 @@ void main() {
       expect(body['message'], 'Нет доступа');
     });
   });
-} 
+}

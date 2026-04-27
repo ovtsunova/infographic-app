@@ -11,8 +11,7 @@ class GroupsHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT
           ID_Group AS id,
           GroupName AS group_name,
@@ -21,8 +20,7 @@ class GroupsHandler {
           DirectionName AS direction_name
         FROM StudyGroups
         ORDER BY ID_Group
-        ''',
-      );
+        ''');
 
       final groups = result.map((row) {
         final data = row.toColumnMap();
@@ -36,10 +34,7 @@ class GroupsHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': groups,
-      });
+      return JsonResponse.ok({'success': true, 'data': groups});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -58,8 +53,7 @@ class GroupsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           SELECT
             ID_Group AS id,
             GroupName AS group_name,
@@ -68,17 +62,12 @@ class GroupsHandler {
             DirectionName AS direction_name
           FROM StudyGroups
           WHERE ID_Group = @id
-          ''',
-        ),
-        parameters: {
-          'id': groupId,
-        },
+          '''),
+        parameters: {'id': groupId},
       );
 
       if (result.isEmpty) {
-        return JsonResponse.notFound(
-          'Учебная группа не найдена',
-        );
+        return JsonResponse.notFound('Учебная группа не найдена');
       }
 
       final data = result.first.toColumnMap();
@@ -120,8 +109,7 @@ class GroupsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           INSERT INTO StudyGroups (
             GroupName,
             Course,
@@ -140,8 +128,7 @@ class GroupsHandler {
             Course AS course,
             StudyYear AS study_year,
             DirectionName AS direction_name
-          ''',
-        ),
+          '''),
         parameters: {
           'groupName': groupName,
           'course': course,
@@ -198,8 +185,7 @@ class GroupsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           UPDATE StudyGroups
           SET
             GroupName = @groupName,
@@ -213,8 +199,7 @@ class GroupsHandler {
             Course AS course,
             StudyYear AS study_year,
             DirectionName AS direction_name
-          ''',
-        ),
+          '''),
         parameters: {
           'id': groupId,
           'groupName': groupName,
@@ -225,9 +210,7 @@ class GroupsHandler {
       );
 
       if (result.isEmpty) {
-        return JsonResponse.notFound(
-          'Учебная группа не найдена',
-        );
+        return JsonResponse.notFound('Учебная группа не найдена');
       }
 
       final data = result.first.toColumnMap();
@@ -261,22 +244,16 @@ class GroupsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           DELETE FROM StudyGroups
           WHERE ID_Group = @id
           RETURNING ID_Group
-          ''',
-        ),
-        parameters: {
-          'id': groupId,
-        },
+          '''),
+        parameters: {'id': groupId},
       );
 
       if (result.isEmpty) {
-        return JsonResponse.notFound(
-          'Учебная группа не найдена',
-        );
+        return JsonResponse.notFound('Учебная группа не найдена');
       }
 
       return JsonResponse.ok({

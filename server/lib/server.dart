@@ -1,4 +1,4 @@
-library server;
+library;
 
 export 'src/config/app_env.dart';
 export 'src/db/database.dart';

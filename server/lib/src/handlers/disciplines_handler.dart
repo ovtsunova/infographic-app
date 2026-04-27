@@ -11,8 +11,7 @@ class DisciplinesHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT
           ID_Discipline AS id,
           DisciplineName AS discipline_name,
@@ -20,8 +19,7 @@ class DisciplinesHandler {
           TeacherName AS teacher_name
         FROM Disciplines
         ORDER BY ID_Discipline
-        ''',
-      );
+        ''');
 
       final disciplines = result.map((row) {
         final data = row.toColumnMap();
@@ -34,10 +32,7 @@ class DisciplinesHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': disciplines,
-      });
+      return JsonResponse.ok({'success': true, 'data': disciplines});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -48,16 +43,13 @@ class DisciplinesHandler {
       final disciplineId = int.tryParse(id);
 
       if (disciplineId == null) {
-        return JsonResponse.badRequest(
-          'Некорректный идентификатор дисциплины',
-        );
+        return JsonResponse.badRequest('Некорректный идентификатор дисциплины');
       }
 
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           SELECT
             ID_Discipline AS id,
             DisciplineName AS discipline_name,
@@ -65,17 +57,12 @@ class DisciplinesHandler {
             TeacherName AS teacher_name
           FROM Disciplines
           WHERE ID_Discipline = @id
-          ''',
-        ),
-        parameters: {
-          'id': disciplineId,
-        },
+          '''),
+        parameters: {'id': disciplineId},
       );
 
       if (result.isEmpty) {
-        return JsonResponse.notFound(
-          'Дисциплина не найдена',
-        );
+        return JsonResponse.notFound('Дисциплина не найдена');
       }
 
       final data = result.first.toColumnMap();
@@ -113,8 +100,7 @@ class DisciplinesHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           INSERT INTO Disciplines (
             DisciplineName,
             Description,
@@ -130,8 +116,7 @@ class DisciplinesHandler {
             DisciplineName AS discipline_name,
             Description AS description,
             TeacherName AS teacher_name
-          ''',
-        ),
+          '''),
         parameters: {
           'disciplineName': disciplineName,
           'description': description,
@@ -161,9 +146,7 @@ class DisciplinesHandler {
       final disciplineId = int.tryParse(id);
 
       if (disciplineId == null) {
-        return JsonResponse.badRequest(
-          'Некорректный идентификатор дисциплины',
-        );
+        return JsonResponse.badRequest('Некорректный идентификатор дисциплины');
       }
 
       final body = await _readJsonBody(request);
@@ -183,8 +166,7 @@ class DisciplinesHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           UPDATE Disciplines
           SET
             DisciplineName = @disciplineName,
@@ -196,8 +178,7 @@ class DisciplinesHandler {
             DisciplineName AS discipline_name,
             Description AS description,
             TeacherName AS teacher_name
-          ''',
-        ),
+          '''),
         parameters: {
           'id': disciplineId,
           'disciplineName': disciplineName,
@@ -207,9 +188,7 @@ class DisciplinesHandler {
       );
 
       if (result.isEmpty) {
-        return JsonResponse.notFound(
-          'Дисциплина не найдена',
-        );
+        return JsonResponse.notFound('Дисциплина не найдена');
       }
 
       final data = result.first.toColumnMap();
@@ -234,30 +213,22 @@ class DisciplinesHandler {
       final disciplineId = int.tryParse(id);
 
       if (disciplineId == null) {
-        return JsonResponse.badRequest(
-          'Некорректный идентификатор дисциплины',
-        );
+        return JsonResponse.badRequest('Некорректный идентификатор дисциплины');
       }
 
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           DELETE FROM Disciplines
           WHERE ID_Discipline = @id
           RETURNING ID_Discipline
-          ''',
-        ),
-        parameters: {
-          'id': disciplineId,
-        },
+          '''),
+        parameters: {'id': disciplineId},
       );
 
       if (result.isEmpty) {
-        return JsonResponse.notFound(
-          'Дисциплина не найдена',
-        );
+        return JsonResponse.notFound('Дисциплина не найдена');
       }
 
       return JsonResponse.ok({
@@ -307,9 +278,7 @@ class DisciplinesHandler {
     return text.isEmpty ? null : text;
   }
 
-  String? _validateDisciplineData({
-    required String disciplineName,
-  }) {
+  String? _validateDisciplineData({required String disciplineName}) {
     if (disciplineName.isEmpty) {
       return 'Введите название дисциплины';
     }

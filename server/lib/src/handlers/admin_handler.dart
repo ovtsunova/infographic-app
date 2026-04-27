@@ -11,8 +11,7 @@ class AdminHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT
           a.ID_Account AS account_id,
           a.Email AS email,
@@ -28,8 +27,7 @@ class AdminHandler {
         JOIN Roles r ON a.Role_ID = r.ID_Role
         JOIN Users u ON u.Account_ID = a.ID_Account
         ORDER BY a.ID_Account
-        ''',
-      );
+        ''');
 
       final users = result.map((row) {
         final data = row.toColumnMap();
@@ -48,10 +46,7 @@ class AdminHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': users,
-      });
+      return JsonResponse.ok({'success': true, 'data': users});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -68,8 +63,7 @@ class AdminHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           SELECT
             a.ID_Account AS account_id,
             a.Email AS email,
@@ -85,11 +79,8 @@ class AdminHandler {
           JOIN Roles r ON a.Role_ID = r.ID_Role
           JOIN Users u ON u.Account_ID = a.ID_Account
           WHERE a.ID_Account = @accountId
-          ''',
-        ),
-        parameters: {
-          'accountId': accountId,
-        },
+          '''),
+        parameters: {'accountId': accountId},
       );
 
       if (result.isEmpty) {
@@ -122,29 +113,21 @@ class AdminHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT
           ID_Role AS id,
           RoleName AS role_name
         FROM Roles
         ORDER BY ID_Role
-        ''',
-      );
+        ''');
 
       final roles = result.map((row) {
         final data = row.toColumnMap();
 
-        return {
-          'id': data['id'],
-          'roleName': data['role_name'],
-        };
+        return {'id': data['id'], 'roleName': data['role_name']};
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': roles,
-      });
+      return JsonResponse.ok({'success': true, 'data': roles});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -168,15 +151,10 @@ class AdminHandler {
       final conn = await Database.connection;
 
       await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           CALL SetAccountRole(@accountId, @roleId)
-          ''',
-        ),
-        parameters: {
-          'accountId': accountId,
-          'roleId': roleId,
-        },
+          '''),
+        parameters: {'accountId': accountId, 'roleId': roleId},
       );
 
       return JsonResponse.ok({
@@ -200,21 +178,18 @@ class AdminHandler {
       final isBlocked = body['isBlocked'];
 
       if (isBlocked is! bool) {
-        return JsonResponse.badRequest('Передайте isBlocked со значением true или false');
+        return JsonResponse.badRequest(
+          'Передайте isBlocked со значением true или false',
+        );
       }
 
       final conn = await Database.connection;
 
       await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           CALL SetAccountBlockStatus(@accountId, @isBlocked)
-          ''',
-        ),
-        parameters: {
-          'accountId': accountId,
-          'isBlocked': isBlocked,
-        },
+          '''),
+        parameters: {'accountId': accountId, 'isBlocked': isBlocked},
       );
 
       return JsonResponse.ok({
@@ -230,13 +205,13 @@ class AdminHandler {
 
   Future<Response> getAuditLogs(Request request) async {
     try {
-      final limit = int.tryParse(request.url.queryParameters['limit'] ?? '') ?? 100;
+      final limit =
+          int.tryParse(request.url.queryParameters['limit'] ?? '') ?? 100;
 
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           SELECT
             al.ID_AuditLog AS id,
             al.ActionName AS action_name,
@@ -250,11 +225,8 @@ class AdminHandler {
           LEFT JOIN Accounts a ON al.Account_ID = a.ID_Account
           ORDER BY al.ActionDate DESC
           LIMIT @limit
-          ''',
-        ),
-        parameters: {
-          'limit': limit,
-        },
+          '''),
+        parameters: {'limit': limit},
       );
 
       final logs = result.map((row) {
@@ -272,10 +244,7 @@ class AdminHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': logs,
-      });
+      return JsonResponse.ok({'success': true, 'data': logs});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -329,8 +298,7 @@ class AdminHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT
           i.ID_ImportFile AS id,
           i.OriginalFileName AS original_file_name,
@@ -345,8 +313,7 @@ class AdminHandler {
         FROM ImportFiles i
         JOIN Accounts a ON i.Account_ID = a.ID_Account
         ORDER BY i.ImportDate DESC
-        ''',
-      );
+        ''');
 
       final files = result.map((row) {
         final data = row.toColumnMap();
@@ -365,10 +332,7 @@ class AdminHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': files,
-      });
+      return JsonResponse.ok({'success': true, 'data': files});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -378,8 +342,7 @@ class AdminHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT
           e.ID_Export AS id,
           e.FileName AS file_name,
@@ -390,8 +353,7 @@ class AdminHandler {
         FROM ExportedFiles e
         JOIN Infographics i ON e.Infographic_ID = i.ID_Infographic
         ORDER BY e.ExportDate DESC
-        ''',
-      );
+        ''');
 
       final files = result.map((row) {
         final data = row.toColumnMap();
@@ -406,10 +368,7 @@ class AdminHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': files,
-      });
+      return JsonResponse.ok({'success': true, 'data': files});
     } catch (error) {
       return JsonResponse.serverError(error);
     }

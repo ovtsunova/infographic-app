@@ -18,8 +18,7 @@ class ProfileHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           SELECT
             a.ID_Account AS account_id,
             a.Email AS email,
@@ -35,11 +34,8 @@ class ProfileHandler {
           JOIN Roles r ON a.Role_ID = r.ID_Role
           JOIN Users u ON u.Account_ID = a.ID_Account
           WHERE a.ID_Account = @accountId
-          ''',
-        ),
-        parameters: {
-          'accountId': accountId,
-        },
+          '''),
+        parameters: {'accountId': accountId},
       );
 
       if (result.isEmpty) {
@@ -93,8 +89,7 @@ class ProfileHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           UPDATE Users
           SET
             LastName = @lastName,
@@ -106,8 +101,7 @@ class ProfileHandler {
             LastName AS last_name,
             FirstName AS first_name,
             Patronymic AS patronymic
-          ''',
-        ),
+          '''),
         parameters: {
           'accountId': accountId,
           'lastName': lastName,
@@ -164,16 +158,11 @@ class ProfileHandler {
       final conn = await Database.connection;
 
       final checkResult = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           SELECT *
           FROM CheckUserPassword(@email, @oldPassword)
-          ''',
-        ),
-        parameters: {
-          'email': email,
-          'oldPassword': oldPassword,
-        },
+          '''),
+        parameters: {'email': email, 'oldPassword': oldPassword},
       );
 
       if (checkResult.isEmpty) {
@@ -181,17 +170,12 @@ class ProfileHandler {
       }
 
       await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           UPDATE Accounts
           SET PasswordHash = crypt(@newPassword, gen_salt('bf', 12))
           WHERE ID_Account = @accountId
-          ''',
-        ),
-        parameters: {
-          'accountId': accountId,
-          'newPassword': newPassword,
-        },
+          '''),
+        parameters: {'accountId': accountId, 'newPassword': newPassword},
       );
 
       return JsonResponse.ok({

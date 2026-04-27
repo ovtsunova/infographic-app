@@ -8,14 +8,11 @@ class TokenService {
     required String email,
     required String roleName,
   }) {
-    final jwt = JWT(
-      {
-        'accountId': accountId,
-        'email': email,
-        'role': roleName,
-      },
-      issuer: 'infographic-app',
-    );
+    final jwt = JWT({
+      'accountId': accountId,
+      'email': email,
+      'role': roleName,
+    }, issuer: 'infographic-app');
 
     return jwt.sign(
       SecretKey(AppEnv.jwtSecret),
@@ -25,10 +22,7 @@ class TokenService {
 
   Map<String, dynamic>? verifyToken(String token) {
     try {
-      final jwt = JWT.verify(
-        token,
-        SecretKey(AppEnv.jwtSecret),
-      );
+      final jwt = JWT.verify(token, SecretKey(AppEnv.jwtSecret));
 
       final payload = jwt.payload;
 

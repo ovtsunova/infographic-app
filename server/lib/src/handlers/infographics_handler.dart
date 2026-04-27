@@ -11,8 +11,7 @@ class InfographicsHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT
           ID_Template AS id,
           TemplateName AS template_name,
@@ -23,8 +22,7 @@ class InfographicsHandler {
         FROM InfographicTemplates
         WHERE IsActive = TRUE
         ORDER BY ID_Template
-        ''',
-      );
+        ''');
 
       final templates = result.map((row) {
         final data = row.toColumnMap();
@@ -39,10 +37,7 @@ class InfographicsHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': templates,
-      });
+      return JsonResponse.ok({'success': true, 'data': templates});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -59,8 +54,7 @@ class InfographicsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           SELECT
             ID_Infographic AS id,
             Title AS title,
@@ -72,11 +66,8 @@ class InfographicsHandler {
           FROM Infographics
           WHERE Account_ID = @accountId
           ORDER BY CreationDate DESC
-          ''',
-        ),
-        parameters: {
-          'accountId': accountId,
-        },
+          '''),
+        parameters: {'accountId': accountId},
       );
 
       final items = result.map((row) {
@@ -93,10 +84,7 @@ class InfographicsHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': items,
-      });
+      return JsonResponse.ok({'success': true, 'data': items});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -106,13 +94,11 @@ class InfographicsHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT *
         FROM InfographicsView
         ORDER BY "Дата создания" DESC
-        ''',
-      );
+        ''');
 
       final items = result.map((row) {
         final data = row.toColumnMap();
@@ -128,10 +114,7 @@ class InfographicsHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': items,
-      });
+      return JsonResponse.ok({'success': true, 'data': items});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -177,8 +160,7 @@ class InfographicsHandler {
       final conn = await Database.connection;
 
       await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           CALL SaveInfographic(
             @title,
             @chartType,
@@ -187,8 +169,7 @@ class InfographicsHandler {
             @accountId,
             @templateId
           )
-          ''',
-        ),
+          '''),
         parameters: {
           'title': title,
           'chartType': chartType,
@@ -218,7 +199,9 @@ class InfographicsHandler {
       }
 
       if (infographicId == null) {
-        return JsonResponse.badRequest('Некорректный идентификатор инфографики');
+        return JsonResponse.badRequest(
+          'Некорректный идентификатор инфографики',
+        );
       }
 
       final role = _getRole(request);
@@ -227,14 +210,12 @@ class InfographicsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           DELETE FROM Infographics
           WHERE ID_Infographic = @id
             AND (@isAdmin = TRUE OR Account_ID = @accountId)
           RETURNING ID_Infographic
-          ''',
-        ),
+          '''),
         parameters: {
           'id': infographicId,
           'accountId': accountId,

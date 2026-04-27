@@ -11,8 +11,7 @@ class AttendanceHandler {
     try {
       final conn = await Database.connection;
 
-      final result = await conn.execute(
-        '''
+      final result = await conn.execute('''
         SELECT
           a.ID_Attendance AS id,
           a.AttendedCount AS attended_count,
@@ -29,8 +28,7 @@ class AttendanceHandler {
         JOIN Disciplines d ON a.Discipline_ID = d.ID_Discipline
         JOIN StudyPeriods p ON a.Period_ID = p.ID_Period
         ORDER BY a.ID_Attendance
-        ''',
-      );
+        ''');
 
       final attendance = result.map((row) {
         final data = row.toColumnMap();
@@ -56,10 +54,7 @@ class AttendanceHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({
-        'success': true,
-        'data': attendance,
-      });
+      return JsonResponse.ok({'success': true, 'data': attendance});
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -90,8 +85,7 @@ class AttendanceHandler {
       final conn = await Database.connection;
 
       await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           CALL AddAttendance(
             @studentId,
             @disciplineId,
@@ -99,8 +93,7 @@ class AttendanceHandler {
             @attendedCount,
             @missedCount
           )
-          ''',
-        ),
+          '''),
         parameters: {
           'studentId': studentId,
           'disciplineId': disciplineId,
@@ -124,7 +117,9 @@ class AttendanceHandler {
       final attendanceId = int.tryParse(id);
 
       if (attendanceId == null) {
-        return JsonResponse.badRequest('Некорректный идентификатор посещаемости');
+        return JsonResponse.badRequest(
+          'Некорректный идентификатор посещаемости',
+        );
       }
 
       final body = await _readJsonBody(request);
@@ -150,8 +145,7 @@ class AttendanceHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           UPDATE Attendance
           SET
             Student_ID = @studentId,
@@ -161,8 +155,7 @@ class AttendanceHandler {
             MissedCount = @missedCount
           WHERE ID_Attendance = @id
           RETURNING ID_Attendance
-          ''',
-        ),
+          '''),
         parameters: {
           'id': attendanceId,
           'studentId': studentId,
@@ -191,22 +184,20 @@ class AttendanceHandler {
       final attendanceId = int.tryParse(id);
 
       if (attendanceId == null) {
-        return JsonResponse.badRequest('Некорректный идентификатор посещаемости');
+        return JsonResponse.badRequest(
+          'Некорректный идентификатор посещаемости',
+        );
       }
 
       final conn = await Database.connection;
 
       final result = await conn.execute(
-        Sql.named(
-          '''
+        Sql.named('''
           DELETE FROM Attendance
           WHERE ID_Attendance = @id
           RETURNING ID_Attendance
-          ''',
-        ),
-        parameters: {
-          'id': attendanceId,
-        },
+          '''),
+        parameters: {'id': attendanceId},
       );
 
       if (result.isEmpty) {
