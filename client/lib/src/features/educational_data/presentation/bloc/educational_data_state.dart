@@ -14,6 +14,7 @@ class EducationalDataState extends Equatable {
   final List<Discipline> disciplines;
   final List<StudyPeriod> periods;
   final List<Student> students;
+  final List<GradeRecord> grades;
   final String? message;
 
   const EducationalDataState({
@@ -22,6 +23,7 @@ class EducationalDataState extends Equatable {
     required this.disciplines,
     required this.periods,
     required this.students,
+    required this.grades,
     this.message,
   });
 
@@ -31,6 +33,7 @@ class EducationalDataState extends Equatable {
         disciplines = const [],
         periods = const [],
         students = const [],
+        grades = const [],
         message = null;
 
   bool get isBusy {
@@ -42,7 +45,8 @@ class EducationalDataState extends Equatable {
     return groups.isNotEmpty ||
         disciplines.isNotEmpty ||
         periods.isNotEmpty ||
-        students.isNotEmpty;
+        students.isNotEmpty ||
+        grades.isNotEmpty;
   }
 
   EducationalDataState copyWith({
@@ -51,6 +55,7 @@ class EducationalDataState extends Equatable {
     List<Discipline>? disciplines,
     List<StudyPeriod>? periods,
     List<Student>? students,
+    List<GradeRecord>? grades,
     String? message,
     bool clearMessage = false,
   }) {
@@ -60,6 +65,7 @@ class EducationalDataState extends Equatable {
       disciplines: disciplines ?? this.disciplines,
       periods: periods ?? this.periods,
       students: students ?? this.students,
+      grades: grades ?? this.grades,
       message: clearMessage ? null : message ?? this.message,
     );
   }
@@ -71,6 +77,7 @@ class EducationalDataState extends Equatable {
         disciplines,
         periods,
         students,
+        grades,
         message,
       ];
 }

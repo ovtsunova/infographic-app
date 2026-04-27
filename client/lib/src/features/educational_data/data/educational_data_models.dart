@@ -3,19 +3,22 @@ class EducationalDataBundle {
   final List<Discipline> disciplines;
   final List<StudyPeriod> periods;
   final List<Student> students;
+  final List<GradeRecord> grades;
 
   const EducationalDataBundle({
     required this.groups,
     required this.disciplines,
     required this.periods,
     required this.students,
+    required this.grades,
   });
 
   const EducationalDataBundle.empty()
       : groups = const [],
         disciplines = const [],
         periods = const [],
-        students = const [];
+        students = const [],
+        grades = const [];
 }
 
 class StudyGroup {
@@ -91,6 +94,8 @@ class StudyPeriod {
       endDate: _readNullableString(json['endDate']),
     );
   }
+
+  String get title => '$studyYear, семестр $semester';
 }
 
 class Student {
@@ -133,6 +138,52 @@ class Student {
 
     return parts.join(' ');
   }
+}
+
+class GradeRecord {
+  final int id;
+  final int gradeValue;
+  final String controlType;
+  final String? gradeDate;
+  final int studentId;
+  final String studentName;
+  final int disciplineId;
+  final String disciplineName;
+  final int periodId;
+  final String studyYear;
+  final int semester;
+
+  const GradeRecord({
+    required this.id,
+    required this.gradeValue,
+    required this.controlType,
+    required this.gradeDate,
+    required this.studentId,
+    required this.studentName,
+    required this.disciplineId,
+    required this.disciplineName,
+    required this.periodId,
+    required this.studyYear,
+    required this.semester,
+  });
+
+  factory GradeRecord.fromJson(Map<String, dynamic> json) {
+    return GradeRecord(
+      id: _readRequiredInt(json['id']),
+      gradeValue: _readRequiredInt(json['gradeValue']),
+      controlType: _readString(json['controlType']),
+      gradeDate: _readNullableString(json['gradeDate']),
+      studentId: _readRequiredInt(json['studentId']),
+      studentName: _readString(json['studentName']),
+      disciplineId: _readRequiredInt(json['disciplineId']),
+      disciplineName: _readString(json['disciplineName']),
+      periodId: _readRequiredInt(json['periodId']),
+      studyYear: _readString(json['studyYear']),
+      semester: _readRequiredInt(json['semester']),
+    );
+  }
+
+  String get periodTitle => '$studyYear, семестр $semester';
 }
 
 int _readRequiredInt(dynamic value) {
