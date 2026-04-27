@@ -18,10 +18,8 @@ extension InfographicChartTypeTitle on InfographicChartType {
     switch (this) {
       case InfographicChartType.gradeDistribution:
         return 'Распределение оценок';
-
       case InfographicChartType.averageGradeByGroup:
         return 'Средний балл по группам';
-
       case InfographicChartType.attendanceByGroup:
         return 'Посещаемость по группам';
     }
@@ -39,10 +37,8 @@ extension InfographicVisualTypeInfo on InfographicVisualType {
     switch (this) {
       case InfographicVisualType.bar:
         return 'Столбчатая';
-
       case InfographicVisualType.line:
         return 'Линейная';
-
       case InfographicVisualType.pie:
         return 'Круговая';
     }
@@ -52,10 +48,8 @@ extension InfographicVisualTypeInfo on InfographicVisualType {
     switch (this) {
       case InfographicVisualType.bar:
         return 'bar';
-
       case InfographicVisualType.line:
         return 'line';
-
       case InfographicVisualType.pie:
         return 'pie';
     }
@@ -65,33 +59,71 @@ extension InfographicVisualTypeInfo on InfographicVisualType {
     switch (this) {
       case InfographicVisualType.bar:
         return Icons.bar_chart_rounded;
-
       case InfographicVisualType.line:
         return Icons.show_chart_rounded;
-
       case InfographicVisualType.pie:
         return Icons.pie_chart_rounded;
     }
   }
 }
 
+enum InfographicColorScheme {
+  blue,
+  green,
+  orange,
+  purple,
+}
+
+extension InfographicColorSchemeInfo on InfographicColorScheme {
+  String get title {
+    switch (this) {
+      case InfographicColorScheme.blue:
+        return 'Синяя';
+      case InfographicColorScheme.green:
+        return 'Зелёная';
+      case InfographicColorScheme.orange:
+        return 'Оранжевая';
+      case InfographicColorScheme.purple:
+        return 'Фиолетовая';
+    }
+  }
+}
+
+enum InfographicSortOrder {
+  source,
+  ascending,
+  descending,
+}
+
+extension InfographicSortOrderInfo on InfographicSortOrder {
+  String get title {
+    switch (this) {
+      case InfographicSortOrder.source:
+        return 'Без сортировки';
+      case InfographicSortOrder.ascending:
+        return 'По возрастанию';
+      case InfographicSortOrder.descending:
+        return 'По убыванию';
+    }
+  }
+}
+
 class InfographicBuilderState extends Equatable {
   final InfographicBuilderStatus status;
-
   final List<StudyGroup> groups;
   final List<Discipline> disciplines;
   final List<StudyPeriod> periods;
   final List<Student> students;
-  final List<GradeRecord> grades;
-  final List<AttendanceRecord> attendance;
-
+  final List<dynamic> grades;
+  final List<dynamic> attendance;
   final int? selectedGroupId;
   final int? selectedDisciplineId;
   final int? selectedPeriodId;
-
   final InfographicChartType chartType;
   final InfographicVisualType visualType;
-
+  final InfographicColorScheme colorScheme;
+  final bool showLabels;
+  final InfographicSortOrder sortOrder;
   final InfographicResult? result;
   final String? message;
   final bool isSaving;
@@ -109,6 +141,9 @@ class InfographicBuilderState extends Equatable {
     required this.selectedPeriodId,
     required this.chartType,
     required this.visualType,
+    required this.colorScheme,
+    required this.showLabels,
+    required this.sortOrder,
     required this.result,
     required this.message,
     required this.isSaving,
@@ -127,6 +162,9 @@ class InfographicBuilderState extends Equatable {
         selectedPeriodId = null,
         chartType = InfographicChartType.gradeDistribution,
         visualType = InfographicVisualType.bar,
+        colorScheme = InfographicColorScheme.blue,
+        showLabels = true,
+        sortOrder = InfographicSortOrder.source,
         result = null,
         message = null,
         isSaving = false;
@@ -146,8 +184,8 @@ class InfographicBuilderState extends Equatable {
     List<Discipline>? disciplines,
     List<StudyPeriod>? periods,
     List<Student>? students,
-    List<GradeRecord>? grades,
-    List<AttendanceRecord>? attendance,
+    List<dynamic>? grades,
+    List<dynamic>? attendance,
     int? selectedGroupId,
     bool updateSelectedGroupId = false,
     int? selectedDisciplineId,
@@ -156,6 +194,9 @@ class InfographicBuilderState extends Equatable {
     bool updateSelectedPeriodId = false,
     InfographicChartType? chartType,
     InfographicVisualType? visualType,
+    InfographicColorScheme? colorScheme,
+    bool? showLabels,
+    InfographicSortOrder? sortOrder,
     InfographicResult? result,
     bool updateResult = false,
     bool clearResult = false,
@@ -180,6 +221,9 @@ class InfographicBuilderState extends Equatable {
           updateSelectedPeriodId ? selectedPeriodId : this.selectedPeriodId,
       chartType: chartType ?? this.chartType,
       visualType: visualType ?? this.visualType,
+      colorScheme: colorScheme ?? this.colorScheme,
+      showLabels: showLabels ?? this.showLabels,
+      sortOrder: sortOrder ?? this.sortOrder,
       result: clearResult
           ? null
           : updateResult
@@ -204,6 +248,9 @@ class InfographicBuilderState extends Equatable {
         selectedPeriodId,
         chartType,
         visualType,
+        colorScheme,
+        showLabels,
+        sortOrder,
         result,
         message,
         isSaving,
@@ -215,6 +262,9 @@ class InfographicResult extends Equatable {
   final String subtitle;
   final InfographicChartType chartType;
   final InfographicVisualType visualType;
+  final InfographicColorScheme colorScheme;
+  final bool showLabels;
+  final InfographicSortOrder sortOrder;
   final List<InfographicSummaryMetric> cards;
   final List<InfographicChartItem> chartItems;
   final bool hasSourceData;
@@ -224,6 +274,9 @@ class InfographicResult extends Equatable {
     required this.subtitle,
     required this.chartType,
     required this.visualType,
+    required this.colorScheme,
+    required this.showLabels,
+    required this.sortOrder,
     required this.cards,
     required this.chartItems,
     required this.hasSourceData,
@@ -239,6 +292,9 @@ class InfographicResult extends Equatable {
         subtitle,
         chartType,
         visualType,
+        colorScheme,
+        showLabels,
+        sortOrder,
         cards,
         chartItems,
         hasSourceData,
@@ -255,10 +311,7 @@ class InfographicSummaryMetric extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        title,
-        value,
-      ];
+  List<Object?> get props => [title, value];
 }
 
 class InfographicChartItem extends Equatable {
@@ -271,8 +324,5 @@ class InfographicChartItem extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        label,
-        value,
-      ];
+  List<Object?> get props => [label, value];
 }

@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:client/src/app/app_router.dart';
+import 'package:client/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:client/src/shared/models/app_user.dart';
 
 class SideMenu extends StatelessWidget {
   final String currentPath;
   final AppUserRole role;
   final VoidCallback? onNavigate;
-  final VoidCallback? onLogout;
 
   const SideMenu({
     super.key,
     required this.currentPath,
     required this.role,
     this.onNavigate,
-    this.onLogout,
   });
 
   @override
@@ -28,7 +28,9 @@ class SideMenu extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(
-          right: BorderSide(color: Color(0xFFE5E7EB)),
+          right: BorderSide(
+            color: Color(0xFFE5E7EB),
+          ),
         ),
       ),
       child: SafeArea(
@@ -41,7 +43,7 @@ class SideMenu extends StatelessWidget {
               Expanded(
                 child: ListView.separated(
                   itemCount: items.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final item = items[index];
 
@@ -63,19 +65,28 @@ class SideMenu extends StatelessWidget {
               if (role == AppUserRole.guest)
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     onPressed: () {
                       context.go(AppPaths.login);
                       onNavigate?.call();
                     },
-                    child: const Text('Войти'),
+                    icon: const Icon(Icons.login_rounded),
+                    label: const Text('Войти'),
                   ),
                 )
               else
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: onLogout,
+                    onPressed: () {
+                      final router = GoRouter.of(context);
+                      final authBloc = context.read<AuthBloc>();
+
+                      authBloc.add(const AuthLogoutRequested());
+                      router.go(AppPaths.login);
+
+                      onNavigate?.call();
+                    },
                     icon: const Icon(Icons.logout_rounded),
                     label: const Text('Выйти'),
                   ),
@@ -193,6 +204,8 @@ class _Logo extends StatelessWidget {
             children: [
               const Text(
                 'EduInfo',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.w800,
@@ -200,6 +213,8 @@ class _Logo extends StatelessWidget {
               ),
               Text(
                 role.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 13,
                   color: Color(0xFF6B7280),
@@ -256,6 +271,8 @@ class _MenuTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,

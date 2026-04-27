@@ -21,7 +21,10 @@ class AuthLoginRequested extends AuthEvent {
   });
 
   @override
-  List<Object?> get props => [email, password];
+  List<Object?> get props => [
+        email,
+        password,
+      ];
 }
 
 class AuthRegisterRequested extends AuthEvent {
@@ -54,4 +57,17 @@ class AuthRegisterRequested extends AuthEvent {
 
 class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
+}
+
+class AuthSessionExpired extends AuthEvent {
+  final String message;
+
+  const AuthSessionExpired({
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [
+        message,
+      ];
 }

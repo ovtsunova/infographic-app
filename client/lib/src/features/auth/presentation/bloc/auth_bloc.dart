@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -9,6 +11,7 @@ part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
+  late final StreamSubscription<String> _authFailureSubscription;
 
   AuthBloc({
     required AuthRepository authRepository,
@@ -18,13 +21,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthRegisterRequested>(_onRegisterRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
+    on<AuthSessionExpired>(_onSessionExpired);
+
+    _authFailureSubscription = _authRepository.authFailureStream.listen(
+      (message) {
+        add(AuthSessionExpired(message: message));
+      },
+    );
   }
 
   Future<void> _onStarted(
     AuthStarted event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading, clearMessage: true));
+    emit(
+      state.copyWith(
+        status: AuthStatus.loading,
+        clearMessage: true,
+      ),
+    );
 
     final token = await _authRepository.getSavedToken();
 
@@ -72,7 +87,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    emit(state.copyWith(status: AuthStatus.loading, clearMessage: true));
+    emit(
+      state.copyWith(
+        status: AuthStatus.loading,
+        clearMessage: true,
+      ),
+    );
 
     try {
       final user = await _authRepository.login(
@@ -133,7 +153,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    emit(state.copyWith(status: AuthStatus.loading, clearMessage: true));
+    emit(
+      state.copyWith(
+        status: AuthStatus.loading,
+        clearMessage: true,
+      ),
+    );
 
     try {
       await _authRepository.register(
@@ -177,5 +202,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         status: AuthStatus.unauthenticated,
       ),
     );
+  }
+
+  Future<void> _onSessionExpired(
+    AuthSessionExpired event,
+    Emitter<AuthState> emit,
+  ) async {
+    await _authRepository.logout();
+
+    emit(
+      AuthState(
+        status: AuthStatus.unauthenticated,
+        message: event.message,
+      ),
+    );
+  }
+
+  @override
+  Future<void> close() async {
+    await _authFailureSubscription.cancel();
+
+    return super.close();
   }
 }

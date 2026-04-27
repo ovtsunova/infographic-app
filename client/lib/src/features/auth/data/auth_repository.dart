@@ -14,6 +14,10 @@ class AuthRepository {
   })  : _apiClient = apiClient,
         _storage = storage;
 
+  Stream<String> get authFailureStream {
+    return _apiClient.authFailureStream;
+  }
+
   Future<AppUser> login({
     required String email,
     required String password,
@@ -37,6 +41,7 @@ class AuthRepository {
       await _storage.saveToken(token);
 
       final userJson = _asMap(data['user']);
+
       return AppUser.fromJson(userJson);
     } on DioException catch (error) {
       throw AuthException(_readErrorMessage(error));
@@ -74,8 +79,8 @@ class AuthRepository {
     try {
       final response = await _apiClient.dio.get('/auth/me');
       final data = _asMap(response.data);
-
       final userJson = _asMap(data['data']);
+
       return AppUser.fromJson(userJson);
     } on DioException catch (error) {
       throw AuthException(_readErrorMessage(error));

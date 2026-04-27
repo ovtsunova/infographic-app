@@ -70,6 +70,39 @@ class InfographicVisualTypeChanged extends InfographicBuilderEvent {
   List<Object?> get props => [visualType];
 }
 
+class InfographicColorSchemeChanged extends InfographicBuilderEvent {
+  final InfographicColorScheme colorScheme;
+
+  const InfographicColorSchemeChanged({
+    required this.colorScheme,
+  });
+
+  @override
+  List<Object?> get props => [colorScheme];
+}
+
+class InfographicShowLabelsChanged extends InfographicBuilderEvent {
+  final bool showLabels;
+
+  const InfographicShowLabelsChanged({
+    required this.showLabels,
+  });
+
+  @override
+  List<Object?> get props => [showLabels];
+}
+
+class InfographicSortOrderChanged extends InfographicBuilderEvent {
+  final InfographicSortOrder sortOrder;
+
+  const InfographicSortOrderChanged({
+    required this.sortOrder,
+  });
+
+  @override
+  List<Object?> get props => [sortOrder];
+}
+
 class InfographicGenerateRequested extends InfographicBuilderEvent {
   const InfographicGenerateRequested();
 }

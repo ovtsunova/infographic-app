@@ -27,6 +27,9 @@ class InfographicBuilderBloc
     on<InfographicPeriodChanged>(_onPeriodChanged);
     on<InfographicChartTypeChanged>(_onChartTypeChanged);
     on<InfographicVisualTypeChanged>(_onVisualTypeChanged);
+    on<InfographicColorSchemeChanged>(_onColorSchemeChanged);
+    on<InfographicShowLabelsChanged>(_onShowLabelsChanged);
+    on<InfographicSortOrderChanged>(_onSortOrderChanged);
     on<InfographicGenerateRequested>(_onGenerateRequested);
     on<InfographicSaveRequested>(_onSaveRequested);
   }
@@ -113,6 +116,45 @@ class InfographicBuilderBloc
     );
   }
 
+  void _onColorSchemeChanged(
+    InfographicColorSchemeChanged event,
+    Emitter<InfographicBuilderState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        colorScheme: event.colorScheme,
+        clearResult: true,
+        clearMessage: true,
+      ),
+    );
+  }
+
+  void _onShowLabelsChanged(
+    InfographicShowLabelsChanged event,
+    Emitter<InfographicBuilderState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        showLabels: event.showLabels,
+        clearResult: true,
+        clearMessage: true,
+      ),
+    );
+  }
+
+  void _onSortOrderChanged(
+    InfographicSortOrderChanged event,
+    Emitter<InfographicBuilderState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        sortOrder: event.sortOrder,
+        clearResult: true,
+        clearMessage: true,
+      ),
+    );
+  }
+
   void _onGenerateRequested(
     InfographicGenerateRequested event,
     Emitter<InfographicBuilderState> emit,
@@ -163,11 +205,18 @@ class InfographicBuilderBloc
           'periodId': state.selectedPeriodId,
           'chartType': state.chartType.name,
           'visualType': state.visualType.name,
+          'colorScheme': state.colorScheme.name,
+          'showLabels': state.showLabels,
+          'sortOrder': state.sortOrder.name,
         },
         resultData: {
           'title': result.title,
           'subtitle': result.subtitle,
+          'chartType': result.chartType.name,
           'visualType': result.visualType.name,
+          'colorScheme': result.colorScheme.name,
+          'showLabels': result.showLabels,
+          'sortOrder': result.sortOrder.name,
           'cards': result.cards.map((card) {
             return {
               'title': card.title,
@@ -221,7 +270,7 @@ class InfographicBuilderBloc
           periods: data.periods,
           students: data.students,
           grades: data.grades,
-          attendance: data.attendance,
+          attendance: _readAttendanceFromBundle(data),
           clearMessage: true,
           clearResult: true,
         ),
@@ -248,13 +297,14 @@ class InfographicBuilderBloc
     final averageAttendance = _averageAttendance(filteredAttendance);
 
     final debtorCount = filteredGrades
-        .where((grade) => grade.gradeValue <= 2)
-        .map((grade) => grade.studentId)
+        .where((grade) => _gradeValue(grade) <= 2)
+        .map(_recordStudentId)
+        .whereType<int>()
         .toSet()
         .length;
 
     final excellentGradeCount = filteredGrades
-        .where((grade) => grade.gradeValue == 5)
+        .where((grade) => _gradeValue(grade) == 5)
         .length;
 
     final cards = [
@@ -288,10 +338,13 @@ class InfographicBuilderBloc
       ),
     ];
 
-    final chartItems = _buildChartItems(
-      state: state,
-      filteredGrades: filteredGrades,
-      filteredAttendance: filteredAttendance,
+    final chartItems = _sortChartItems(
+      _buildChartItems(
+        state: state,
+        filteredGrades: filteredGrades,
+        filteredAttendance: filteredAttendance,
+      ),
+      state.sortOrder,
     );
 
     return InfographicResult(
@@ -299,13 +352,16 @@ class InfographicBuilderBloc
       subtitle: _buildSubtitle(state),
       chartType: state.chartType,
       visualType: state.visualType,
+      colorScheme: state.colorScheme,
+      showLabels: state.showLabels,
+      sortOrder: state.sortOrder,
       cards: cards,
       chartItems: chartItems,
       hasSourceData: filteredGrades.isNotEmpty || filteredAttendance.isNotEmpty,
     );
   }
 
-  List<GradeRecord> _filteredGrades(
+  List<dynamic> _filteredGrades(
     InfographicBuilderState state,
   ) {
     final studentIds = _filteredStudents(state)
@@ -313,17 +369,17 @@ class InfographicBuilderBloc
         .toSet();
 
     return state.grades.where((grade) {
-      if (!studentIds.contains(grade.studentId)) {
+      if (!studentIds.contains(_recordStudentId(grade))) {
         return false;
       }
 
       if (state.selectedDisciplineId != null &&
-          grade.disciplineId != state.selectedDisciplineId) {
+          _recordDisciplineId(grade) != state.selectedDisciplineId) {
         return false;
       }
 
       if (state.selectedPeriodId != null &&
-          grade.periodId != state.selectedPeriodId) {
+          _recordPeriodId(grade) != state.selectedPeriodId) {
         return false;
       }
 
@@ -331,7 +387,7 @@ class InfographicBuilderBloc
     }).toList();
   }
 
-  List<AttendanceRecord> _filteredAttendance(
+  List<dynamic> _filteredAttendance(
     InfographicBuilderState state,
   ) {
     final studentIds = _filteredStudents(state)
@@ -339,17 +395,17 @@ class InfographicBuilderBloc
         .toSet();
 
     return state.attendance.where((record) {
-      if (!studentIds.contains(record.studentId)) {
+      if (!studentIds.contains(_recordStudentId(record))) {
         return false;
       }
 
       if (state.selectedDisciplineId != null &&
-          record.disciplineId != state.selectedDisciplineId) {
+          _recordDisciplineId(record) != state.selectedDisciplineId) {
         return false;
       }
 
       if (state.selectedPeriodId != null &&
-          record.periodId != state.selectedPeriodId) {
+          _recordPeriodId(record) != state.selectedPeriodId) {
         return false;
       }
 
@@ -371,25 +427,23 @@ class InfographicBuilderBloc
 
   List<InfographicChartItem> _buildChartItems({
     required InfographicBuilderState state,
-    required List<GradeRecord> filteredGrades,
-    required List<AttendanceRecord> filteredAttendance,
+    required List<dynamic> filteredGrades,
+    required List<dynamic> filteredAttendance,
   }) {
     switch (state.chartType) {
       case InfographicChartType.gradeDistribution:
         return _buildGradeDistribution(filteredGrades);
-
       case InfographicChartType.averageGradeByGroup:
         return _buildAverageGradeByGroup(state);
-
       case InfographicChartType.attendanceByGroup:
         return _buildAttendanceByGroup(state);
     }
   }
 
   List<InfographicChartItem> _buildGradeDistribution(
-    List<GradeRecord> grades,
+    List<dynamic> grades,
   ) {
-    final counts = <int, int>{
+    final counts = {
       2: 0,
       3: 0,
       4: 0,
@@ -397,14 +451,16 @@ class InfographicBuilderBloc
     };
 
     for (final grade in grades) {
-      if (counts.containsKey(grade.gradeValue)) {
-        counts[grade.gradeValue] = counts[grade.gradeValue]! + 1;
+      final value = _gradeValue(grade);
+
+      if (counts.containsKey(value)) {
+        counts[value] = counts[value]! + 1;
       }
     }
 
     return counts.entries.map((entry) {
       return InfographicChartItem(
-        label: entry.key.toString(),
+        label: 'Оценка ${entry.key}',
         value: entry.value.toDouble(),
       );
     }).toList();
@@ -422,17 +478,17 @@ class InfographicBuilderBloc
           .toSet();
 
       final grades = state.grades.where((grade) {
-        if (!studentIds.contains(grade.studentId)) {
+        if (!studentIds.contains(_recordStudentId(grade))) {
           return false;
         }
 
         if (state.selectedDisciplineId != null &&
-            grade.disciplineId != state.selectedDisciplineId) {
+            _recordDisciplineId(grade) != state.selectedDisciplineId) {
           return false;
         }
 
         if (state.selectedPeriodId != null &&
-            grade.periodId != state.selectedPeriodId) {
+            _recordPeriodId(grade) != state.selectedPeriodId) {
           return false;
         }
 
@@ -458,17 +514,17 @@ class InfographicBuilderBloc
           .toSet();
 
       final attendance = state.attendance.where((record) {
-        if (!studentIds.contains(record.studentId)) {
+        if (!studentIds.contains(_recordStudentId(record))) {
           return false;
         }
 
         if (state.selectedDisciplineId != null &&
-            record.disciplineId != state.selectedDisciplineId) {
+            _recordDisciplineId(record) != state.selectedDisciplineId) {
           return false;
         }
 
         if (state.selectedPeriodId != null &&
-            record.periodId != state.selectedPeriodId) {
+            _recordPeriodId(record) != state.selectedPeriodId) {
           return false;
         }
 
@@ -480,6 +536,24 @@ class InfographicBuilderBloc
         value: _averageAttendance(attendance),
       );
     }).toList();
+  }
+
+  List<InfographicChartItem> _sortChartItems(
+    List<InfographicChartItem> items,
+    InfographicSortOrder sortOrder,
+  ) {
+    final sortedItems = [...items];
+
+    switch (sortOrder) {
+      case InfographicSortOrder.source:
+        return sortedItems;
+      case InfographicSortOrder.ascending:
+        sortedItems.sort((a, b) => a.value.compareTo(b.value));
+        return sortedItems;
+      case InfographicSortOrder.descending:
+        sortedItems.sort((a, b) => b.value.compareTo(a.value));
+        return sortedItems;
+    }
   }
 
   List<StudyGroup> _visibleGroups(
@@ -495,36 +569,36 @@ class InfographicBuilderBloc
   }
 
   double _averageGrade(
-    List<GradeRecord> grades,
+    List<dynamic> grades,
   ) {
     if (grades.isEmpty) {
       return 0;
     }
 
-    final sum = grades.fold<int>(
+    final sum = grades.fold<double>(
       0,
-      (previousValue, grade) => previousValue + grade.gradeValue,
+      (previousValue, grade) => previousValue + _gradeValue(grade),
     );
 
     return sum / grades.length;
   }
 
   double _successRate(
-    List<GradeRecord> grades,
+    List<dynamic> grades,
   ) {
     if (grades.isEmpty) {
       return 0;
     }
 
     final successfulCount = grades
-        .where((grade) => grade.gradeValue >= 3)
+        .where((grade) => _gradeValue(grade) >= 3)
         .length;
 
     return successfulCount / grades.length * 100;
   }
 
   double _averageAttendance(
-    List<AttendanceRecord> attendance,
+    List<dynamic> attendance,
   ) {
     if (attendance.isEmpty) {
       return 0;
@@ -532,7 +606,7 @@ class InfographicBuilderBloc
 
     final sum = attendance.fold<double>(
       0,
-      (previousValue, record) => previousValue + record.attendanceRate,
+      (previousValue, record) => previousValue + _attendanceRate(record),
     );
 
     return sum / attendance.length;
@@ -588,5 +662,147 @@ class InfographicBuilderBloc
     }
 
     return null;
+  }
+
+  List<dynamic> _readAttendanceFromBundle(dynamic data) {
+    try {
+      final value = data.attendance;
+
+      if (value is List) {
+        return value;
+      }
+
+      return const [];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  int _gradeValue(dynamic grade) {
+    return _readIntFromData(grade, 'gradeValue') ?? 0;
+  }
+
+  int? _recordStudentId(dynamic record) {
+    return _readIntFromData(record, 'studentId');
+  }
+
+  int? _recordDisciplineId(dynamic record) {
+    return _readIntFromData(record, 'disciplineId');
+  }
+
+  int? _recordPeriodId(dynamic record) {
+    return _readIntFromData(record, 'periodId');
+  }
+
+  double _attendanceRate(dynamic record) {
+    final explicitRate = _readDoubleFromData(record, 'attendanceRate') ??
+        _readDoubleFromData(record, 'attendancePercent') ??
+        _readDoubleFromData(record, 'rate');
+
+    if (explicitRate != null) {
+      return explicitRate;
+    }
+
+    final attended = _readDoubleFromData(record, 'attendanceCount') ??
+        _readDoubleFromData(record, 'attendedCount') ??
+        _readDoubleFromData(record, 'presentCount') ??
+        0;
+
+    final missed = _readDoubleFromData(record, 'absenceCount') ??
+        _readDoubleFromData(record, 'absentCount') ??
+        _readDoubleFromData(record, 'missedCount') ??
+        0;
+
+    final total = attended + missed;
+
+    if (total <= 0) {
+      return 0;
+    }
+
+    return attended / total * 100;
+  }
+
+  int? _readIntFromData(dynamic data, String field) {
+    final value = _readRawValue(data, field);
+
+    if (value == null) {
+      return null;
+    }
+
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(value.toString());
+  }
+
+  double? _readDoubleFromData(dynamic data, String field) {
+    final value = _readRawValue(data, field);
+
+    if (value == null) {
+      return null;
+    }
+
+    if (value is double) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(value.toString().replaceAll(',', '.'));
+  }
+
+  dynamic _readRawValue(dynamic data, String field) {
+    if (data is Map) {
+      return data[field] ?? data[_toSnakeCase(field)];
+    }
+
+    try {
+      switch (field) {
+        case 'studentId':
+          return data.studentId;
+        case 'disciplineId':
+          return data.disciplineId;
+        case 'periodId':
+          return data.periodId;
+        case 'gradeValue':
+          return data.gradeValue;
+        case 'attendanceRate':
+          return data.attendanceRate;
+        case 'attendancePercent':
+          return data.attendancePercent;
+        case 'rate':
+          return data.rate;
+        case 'attendanceCount':
+          return data.attendanceCount;
+        case 'attendedCount':
+          return data.attendedCount;
+        case 'presentCount':
+          return data.presentCount;
+        case 'absenceCount':
+          return data.absenceCount;
+        case 'absentCount':
+          return data.absentCount;
+        case 'missedCount':
+          return data.missedCount;
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
+  }
+
+  String _toSnakeCase(String value) {
+    return value.replaceAllMapped(
+      RegExp(r'[A-Z]'),
+      (match) => '_${match.group(0)!.toLowerCase()}',
+    );
   }
 }
