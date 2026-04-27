@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/app_router.dart';
+import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../models/app_user.dart';
 import 'responsive_layout.dart';
 import 'side_menu.dart';
@@ -17,21 +20,23 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentPath = GoRouterState.of(context).uri.path;
 
-    // Временно ставим admin, чтобы на этапе разработки были видны все разделы.
-    // Позже заменим это на состояние из AuthBloc.
-    const currentRole = AppUserRole.admin;
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        final currentRole = authState.role;
 
-    return ResponsiveLayout(
-      mobile: _MobileShell(
-        currentPath: currentPath,
-        currentRole: currentRole,
-        child: child,
-      ),
-      desktop: _DesktopShell(
-        currentPath: currentPath,
-        currentRole: currentRole,
-        child: child,
-      ),
+        return ResponsiveLayout(
+          mobile: _MobileShell(
+            currentPath: currentPath,
+            currentRole: currentRole,
+            child: child,
+          ),
+          desktop: _DesktopShell(
+            currentPath: currentPath,
+            currentRole: currentRole,
+            child: child,
+          ),
+        );
+      },
     );
   }
 }
@@ -55,6 +60,10 @@ class _DesktopShell extends StatelessWidget {
           SideMenu(
             currentPath: currentPath,
             role: currentRole,
+            onLogout: () {
+              context.read<AuthBloc>().add(const AuthLogoutRequested());
+              context.go(AppPaths.login);
+            },
           ),
           Expanded(
             child: SafeArea(
@@ -92,6 +101,11 @@ class _MobileShell extends StatelessWidget {
           currentPath: currentPath,
           role: currentRole,
           onNavigate: () => Navigator.of(context).pop(),
+          onLogout: () {
+            Navigator.of(context).pop();
+            context.read<AuthBloc>().add(const AuthLogoutRequested());
+            context.go(AppPaths.login);
+          },
         ),
       ),
       body: SafeArea(

@@ -8,12 +8,14 @@ class SideMenu extends StatelessWidget {
   final String currentPath;
   final AppUserRole role;
   final VoidCallback? onNavigate;
+  final VoidCallback? onLogout;
 
   const SideMenu({
     super.key,
     required this.currentPath,
     required this.role,
     this.onNavigate,
+    this.onLogout,
   });
 
   @override
@@ -39,7 +41,7 @@ class SideMenu extends StatelessWidget {
               Expanded(
                 child: ListView.separated(
                   itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final item = items[index];
 
@@ -73,10 +75,7 @@ class SideMenu extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      context.go(AppPaths.login);
-                      onNavigate?.call();
-                    },
+                    onPressed: onLogout,
                     icon: const Icon(Icons.logout_rounded),
                     label: const Text('Выйти'),
                   ),

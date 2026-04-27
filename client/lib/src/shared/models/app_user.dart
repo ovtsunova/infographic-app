@@ -19,6 +19,24 @@ extension AppUserRoleExtension on AppUserRole {
   bool get isGuest => this == AppUserRole.guest;
   bool get isUser => this == AppUserRole.user;
   bool get isAdmin => this == AppUserRole.admin;
+
+  static AppUserRole fromApi(String? value) {
+    final text = value?.toLowerCase().trim() ?? '';
+
+    if (text.contains('администратор') ||
+        text.contains('admin') ||
+        text.contains('administrator')) {
+      return AppUserRole.admin;
+    }
+
+    if (text.contains('пользователь') ||
+        text.contains('user') ||
+        text.contains('client')) {
+      return AppUserRole.user;
+    }
+
+    return AppUserRole.guest;
+  }
 }
 
 class AppUser {
@@ -28,6 +46,7 @@ class AppUser {
   final String? firstName;
   final String? patronymic;
   final AppUserRole role;
+  final bool isBlocked;
 
   const AppUser({
     this.id,
@@ -36,7 +55,20 @@ class AppUser {
     this.firstName,
     this.patronymic,
     required this.role,
+    this.isBlocked = false,
   });
+
+  factory AppUser.fromJson(Map<String, dynamic> json) {
+    return AppUser(
+      id: _readInt(json['accountId'] ?? json['userId'] ?? json['id']),
+      email: json['email']?.toString() ?? '',
+      lastName: json['lastName']?.toString(),
+      firstName: json['firstName']?.toString(),
+      patronymic: json['patronymic']?.toString(),
+      role: AppUserRoleExtension.fromApi(json['role']?.toString()),
+      isBlocked: json['isBlocked'] == true,
+    );
+  }
 
   String get fullName {
     final parts = [
@@ -50,5 +82,17 @@ class AppUser {
     }
 
     return parts.join(' ');
+  }
+
+  static int? _readInt(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is int) {
+      return value;
+    }
+
+    return int.tryParse(value.toString());
   }
 }
