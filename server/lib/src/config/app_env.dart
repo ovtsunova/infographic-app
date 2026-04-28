@@ -27,6 +27,18 @@ class AppEnv {
 
   static int get jwtExpiresHours => _getInt('JWT_EXPIRES_HOURS', 24);
 
+  static String get backupDirectory {
+    return _getString('BACKUP_DIRECTORY', 'backups');
+  }
+
+  static String get pgDumpPath {
+    return _getString('PG_DUMP_PATH', 'pg_dump');
+  }
+
+  static String get psqlPath {
+    return _getString('PSQL_PATH', 'psql');
+  }
+
   static String _getRequired(String key) {
     final value = _env[key];
 

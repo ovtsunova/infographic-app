@@ -22,7 +22,7 @@ class InfographicsHandler {
         FROM InfographicTemplates
         WHERE IsActive = TRUE
         ORDER BY ID_Template
-        ''');
+      ''');
 
       final templates = result.map((row) {
         final data = row.toColumnMap();
@@ -37,7 +37,10 @@ class InfographicsHandler {
         };
       }).toList();
 
-      return JsonResponse.ok({'success': true, 'data': templates});
+      return JsonResponse.ok({
+        'success': true,
+        'data': templates,
+      });
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -56,18 +59,24 @@ class InfographicsHandler {
       final result = await conn.execute(
         Sql.named('''
           SELECT
-            ID_Infographic AS id,
-            Title AS title,
-            ChartType AS chart_type,
-            Parameters AS parameters,
-            ResultData AS result_data,
-            CreationDate AS creation_date,
-            Template_ID AS template_id
-          FROM Infographics
-          WHERE Account_ID = @accountId
-          ORDER BY CreationDate DESC
-          '''),
-        parameters: {'accountId': accountId},
+            i.ID_Infographic AS id,
+            i.Title AS title,
+            i.ChartType AS chart_type,
+            i.Parameters AS parameters,
+            i.ResultData AS result_data,
+            i.CreationDate AS creation_date,
+            i.Template_ID AS template_id,
+            t.TemplateName AS template_name
+          FROM Infographics i
+          JOIN Accounts a ON i.Account_ID = a.ID_Account
+          LEFT JOIN InfographicTemplates t ON i.Template_ID = t.ID_Template
+          WHERE i.Account_ID = @accountId
+            AND a.IsBlocked = FALSE
+          ORDER BY i.CreationDate DESC
+        '''),
+        parameters: {
+          'accountId': accountId,
+        },
       );
 
       final items = result.map((row) {
@@ -81,10 +90,14 @@ class InfographicsHandler {
           'resultData': data['result_data'],
           'creationDate': data['creation_date'].toString(),
           'templateId': data['template_id'],
+          'templateName': data['template_name'],
         };
       }).toList();
 
-      return JsonResponse.ok({'success': true, 'data': items});
+      return JsonResponse.ok({
+        'success': true,
+        'data': items,
+      });
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -95,26 +108,40 @@ class InfographicsHandler {
       final conn = await Database.connection;
 
       final result = await conn.execute('''
-        SELECT *
-        FROM InfographicsView
-        ORDER BY "Дата создания" DESC
-        ''');
+        SELECT
+          i.ID_Infographic AS id,
+          i.Title AS title,
+          i.ChartType AS chart_type,
+          t.TemplateName AS template_name,
+          u.LastName || ' ' || u.FirstName || ' ' || COALESCE(u.Patronymic, '') AS author,
+          a.Email AS author_email,
+          i.CreationDate AS creation_date
+        FROM Infographics i
+        JOIN Accounts a ON i.Account_ID = a.ID_Account
+        JOIN Users u ON a.ID_Account = u.Account_ID
+        LEFT JOIN InfographicTemplates t ON i.Template_ID = t.ID_Template
+        WHERE a.IsBlocked = FALSE
+        ORDER BY i.CreationDate DESC
+      ''');
 
       final items = result.map((row) {
         final data = row.toColumnMap();
 
         return {
-          'id': data['Код инфографики'],
-          'title': data['Название'],
-          'chartType': data['Тип диаграммы'],
-          'templateName': data['Шаблон'],
-          'author': data['Автор'],
-          'authorEmail': data['Email автора'],
-          'creationDate': data['Дата создания'].toString(),
+          'id': data['id'],
+          'title': data['title'],
+          'chartType': data['chart_type'],
+          'templateName': data['template_name'],
+          'author': data['author'],
+          'authorEmail': data['author_email'],
+          'creationDate': data['creation_date'].toString(),
         };
       }).toList();
 
-      return JsonResponse.ok({'success': true, 'data': items});
+      return JsonResponse.ok({
+        'success': true,
+        'data': items,
+      });
     } catch (error) {
       return JsonResponse.serverError(error);
     }
@@ -129,11 +156,9 @@ class InfographicsHandler {
       }
 
       final body = await _readJsonBody(request);
-
       final title = _readString(body, 'title');
       final chartType = _readString(body, 'chartType');
       final templateId = _readNullableInt(body, 'templateId');
-
       final parameters = body['parameters'];
       final resultData = body['resultData'];
 
@@ -169,7 +194,7 @@ class InfographicsHandler {
             @accountId,
             @templateId
           )
-          '''),
+        '''),
         parameters: {
           'title': title,
           'chartType': chartType,
@@ -211,11 +236,26 @@ class InfographicsHandler {
 
       final result = await conn.execute(
         Sql.named('''
-          DELETE FROM Infographics
-          WHERE ID_Infographic = @id
-            AND (@isAdmin = TRUE OR Account_ID = @accountId)
-          RETURNING ID_Infographic
-          '''),
+          DELETE FROM Infographics i
+          WHERE i.ID_Infographic = @id
+            AND (
+              (
+                @isAdmin = TRUE
+                AND EXISTS (
+                  SELECT 1
+                  FROM Accounts owner_account
+                  WHERE owner_account.ID_Account = i.Account_ID
+                    AND owner_account.IsBlocked = FALSE
+                )
+              )
+              OR
+              (
+                @isAdmin = FALSE
+                AND i.Account_ID = @accountId
+              )
+            )
+          RETURNING i.ID_Infographic
+        '''),
         parameters: {
           'id': infographicId,
           'accountId': accountId,
@@ -236,14 +276,119 @@ class InfographicsHandler {
     }
   }
 
+  Future<Response> recordExport(Request request, String id) async {
+    try {
+      final accountId = _getAccountId(request);
+      final infographicId = int.tryParse(id);
+
+      if (accountId == null) {
+        return JsonResponse.unauthorized('Не удалось определить пользователя');
+      }
+
+      if (infographicId == null) {
+        return JsonResponse.badRequest(
+          'Некорректный идентификатор инфографики',
+        );
+      }
+
+      final body = await _readJsonBody(request);
+      final fileName = _readString(body, 'fileName');
+      final fileFormat = _readString(body, 'fileFormat').toUpperCase();
+
+      if (fileName.isEmpty) {
+        return JsonResponse.badRequest('Введите имя экспортируемого файла');
+      }
+
+      if (!['PNG', 'PDF', 'JPG'].contains(fileFormat)) {
+        return JsonResponse.badRequest('Недопустимый формат экспорта');
+      }
+
+      final role = _getRole(request);
+      final isAdmin = role == 'Администратор';
+      final conn = await Database.connection;
+
+      final infographicResult = await conn.execute(
+        Sql.named('''
+          SELECT i.ID_Infographic
+          FROM Infographics i
+          JOIN Accounts a ON i.Account_ID = a.ID_Account
+          WHERE i.ID_Infographic = @id
+            AND a.IsBlocked = FALSE
+            AND (
+              @isAdmin = TRUE
+              OR i.Account_ID = @accountId
+            )
+          LIMIT 1
+        '''),
+        parameters: {
+          'id': infographicId,
+          'accountId': accountId,
+          'isAdmin': isAdmin,
+        },
+      );
+
+      if (infographicResult.isEmpty) {
+        return JsonResponse.forbidden(
+          'Инфографика не найдена или недоступна для экспорта',
+        );
+      }
+
+      final exportResult = await conn.execute(
+        Sql.named('''
+          INSERT INTO ExportedFiles (
+            FileName,
+            FileFormat,
+            Infographic_ID
+          )
+          VALUES (
+            @fileName,
+            @fileFormat,
+            @infographicId
+          )
+          RETURNING
+            ID_Export AS id,
+            FileName AS file_name,
+            FileFormat AS file_format,
+            ExportDate AS export_date,
+            Infographic_ID AS infographic_id
+        '''),
+        parameters: {
+          'fileName': fileName,
+          'fileFormat': fileFormat,
+          'infographicId': infographicId,
+        },
+      );
+
+      final data = exportResult.first.toColumnMap();
+
+      return JsonResponse.created({
+        'success': true,
+        'message': 'Экспорт инфографики записан в журнал',
+        'data': {
+          'id': data['id'],
+          'fileName': data['file_name'],
+          'fileFormat': data['file_format'],
+          'exportDate': data['export_date'].toString(),
+          'infographicId': data['infographic_id'],
+        },
+      });
+    } catch (error) {
+      return JsonResponse.serverError(error);
+    }
+  }
+
   int? _getAccountId(Request request) {
     final auth = request.context['auth'];
 
-    if (auth is Map<String, dynamic>) {
+    if (auth is Map) {
       final value = auth['accountId'];
 
       if (value is int) {
         return value;
+      }
+
+      if (value is num) {
+        return value.toInt();
       }
 
       return int.tryParse(value.toString());
@@ -255,14 +400,14 @@ class InfographicsHandler {
   String? _getRole(Request request) {
     final auth = request.context['auth'];
 
-    if (auth is Map<String, dynamic>) {
+    if (auth is Map) {
       return auth['role']?.toString();
     }
 
     return null;
   }
 
-  Future<Map<String, dynamic>> _readJsonBody(Request request) async {
+  Future<Map<dynamic, dynamic>> _readJsonBody(Request request) async {
     final bodyText = await request.readAsString();
 
     if (bodyText.trim().isEmpty) {
@@ -271,19 +416,20 @@ class InfographicsHandler {
 
     final decoded = jsonDecode(bodyText);
 
-    if (decoded is Map<String, dynamic>) {
+    if (decoded is Map) {
       return decoded;
     }
 
-    return Map<String, dynamic>.from(decoded as Map);
+    return Map.from(decoded as Map);
   }
 
-  String _readString(Map<String, dynamic> body, String key) {
+  String _readString(Map<dynamic, dynamic> body, String key) {
     final value = body[key];
+
     return value == null ? '' : value.toString().trim();
   }
 
-  int? _readNullableInt(Map<String, dynamic> body, String key) {
+  int? _readNullableInt(Map<dynamic, dynamic> body, String key) {
     final value = body[key];
 
     if (value == null) {
@@ -292,6 +438,10 @@ class InfographicsHandler {
 
     if (value is int) {
       return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
     }
 
     return int.tryParse(value.toString());

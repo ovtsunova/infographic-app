@@ -22,17 +22,42 @@ class Database {
         username: AppEnv.dbUser,
         password: AppEnv.dbPassword,
       ),
-      settings: const ConnectionSettings(sslMode: SslMode.disable),
+      settings: const ConnectionSettings(
+        sslMode: SslMode.disable,
+      ),
     );
 
     return _connection!;
+  }
+
+  static Future<void> setCurrentAccountId(int accountId) async {
+    final conn = await connection;
+
+    await conn.execute(
+      Sql.named('''
+        SELECT set_config('app.current_account_id', @accountId, false)
+      '''),
+      parameters: {
+        'accountId': accountId.toString(),
+      },
+    );
+  }
+
+  static Future<void> clearCurrentAccountId() async {
+    final conn = await connection;
+
+    await conn.execute('''
+      SELECT set_config('app.current_account_id', '', false)
+    ''');
   }
 
   static Future<bool> checkConnection() async {
     try {
       final conn = await connection;
 
-      final result = await conn.execute('SELECT 1 AS result');
+      final result = await conn.execute(
+        'SELECT 1 AS result',
+      );
 
       return result.isNotEmpty && result.first[0] == 1;
     } catch (_) {

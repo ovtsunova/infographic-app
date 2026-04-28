@@ -7,7 +7,6 @@ import 'package:client/src/features/admin/presentation/pages/admin_page.dart';
 import 'package:client/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:client/src/features/auth/presentation/pages/login_page.dart';
 import 'package:client/src/features/auth/presentation/pages/register_page.dart';
-import 'package:client/src/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:client/src/features/educational_data/presentation/pages/educational_data_page.dart';
 import 'package:client/src/features/home/presentation/pages/home_page.dart';
 import 'package:client/src/features/infographic_builder/presentation/pages/infographic_builder_page.dart';
@@ -66,10 +65,6 @@ GoRouter createAppRouter(AuthBloc authBloc) {
           GoRoute(
             path: AppPaths.home,
             builder: (context, state) => const HomePage(),
-          ),
-          GoRoute(
-            path: AppPaths.dashboard,
-            builder: (context, state) => const DashboardPage(),
           ),
           GoRoute(
             path: AppPaths.educationalData,
