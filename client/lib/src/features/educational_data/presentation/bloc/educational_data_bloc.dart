@@ -17,6 +17,7 @@ class EducationalDataBloc
         super(const EducationalDataState.initial()) {
     on<EducationalDataStarted>(_onStarted);
     on<EducationalDataRefreshRequested>(_onRefreshRequested);
+    on<EducationalCsvImportRequested>(_onCsvImportRequested);
 
     on<EducationalGroupCreateRequested>(_onGroupCreateRequested);
     on<EducationalGroupUpdateRequested>(_onGroupUpdateRequested);
@@ -55,6 +56,53 @@ class EducationalDataBloc
     Emitter<EducationalDataState> emit,
   ) async {
     await _loadData(emit);
+  }
+
+  Future<void> _onCsvImportRequested(
+    EducationalCsvImportRequested event,
+    Emitter<EducationalDataState> emit,
+  ) async {
+    final previousState = state;
+
+    emit(
+      state.copyWith(
+        status: EducationalDataStatus.submitting,
+        clearMessage: true,
+      ),
+    );
+
+    try {
+      final result = await _repository.importCsv(
+        endpoint: event.importType.endpoint,
+        fileName: event.fileName,
+        csvText: event.csvText,
+      );
+
+      final data = await _repository.loadAll();
+      final status = result.rowsFailed > 0
+          ? EducationalDataStatus.failure
+          : EducationalDataStatus.success;
+
+      emit(
+        EducationalDataState(
+          status: status,
+          groups: data.groups,
+          disciplines: data.disciplines,
+          periods: data.periods,
+          students: data.students,
+          grades: data.grades,
+          attendance: data.attendance,
+          message: result.detailedMessage,
+        ),
+      );
+    } catch (error) {
+      emit(
+        previousState.copyWith(
+          status: EducationalDataStatus.failure,
+          message: error.toString(),
+        ),
+      );
+    }
   }
 
   Future<void> _onGroupCreateRequested(

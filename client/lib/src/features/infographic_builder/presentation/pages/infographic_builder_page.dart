@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:client/src/core/utils/download_helper.dart';
 import 'package:client/src/features/educational_data/data/educational_data_repository.dart';
 import 'package:client/src/features/infographic_builder/presentation/bloc/infographic_builder_bloc.dart';
+import 'package:client/src/features/saved_infographics/data/saved_infographics_models.dart';
 import 'package:client/src/features/saved_infographics/data/saved_infographics_repository.dart';
 
 class InfographicBuilderPage extends StatelessWidget {
@@ -189,6 +190,29 @@ class _FiltersCard extends StatelessWidget {
                     bloc.add(
                       InfographicPeriodChanged(
                         periodId: _parseNullableId(value),
+                      ),
+                    );
+                  },
+                ),
+                _SelectBox<String>(
+                  label: 'Шаблон оформления',
+                  value: state.selectedTemplateId?.toString() ?? '',
+                  options: [
+                    const _SelectOption(
+                      value: '',
+                      label: 'Без шаблона',
+                    ),
+                    ...state.templates.map((SavedInfographicTemplate template) {
+                      return _SelectOption(
+                        value: template.id.toString(),
+                        label: template.title,
+                      );
+                    }),
+                  ],
+                  onChanged: (value) {
+                    bloc.add(
+                      InfographicTemplateChanged(
+                        templateId: _parseNullableId(value),
                       ),
                     );
                   },

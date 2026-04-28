@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:client/src/features/educational_data/data/educational_data_models.dart';
 import 'package:client/src/features/educational_data/data/educational_data_repository.dart';
+import 'package:client/src/features/saved_infographics/data/saved_infographics_models.dart';
 import 'package:client/src/features/saved_infographics/data/saved_infographics_repository.dart';
 
 part 'infographic_builder_event.dart';
@@ -25,6 +26,7 @@ class InfographicBuilderBloc
     on<InfographicGroupChanged>(_onGroupChanged);
     on<InfographicDisciplineChanged>(_onDisciplineChanged);
     on<InfographicPeriodChanged>(_onPeriodChanged);
+    on<InfographicTemplateChanged>(_onTemplateChanged);
     on<InfographicChartTypeChanged>(_onChartTypeChanged);
     on<InfographicVisualTypeChanged>(_onVisualTypeChanged);
     on<InfographicColorSchemeChanged>(_onColorSchemeChanged);
@@ -84,6 +86,32 @@ class InfographicBuilderBloc
       state.copyWith(
         selectedPeriodId: event.periodId,
         updateSelectedPeriodId: true,
+        clearResult: true,
+        clearMessage: true,
+      ),
+    );
+  }
+
+
+  void _onTemplateChanged(
+    InfographicTemplateChanged event,
+    Emitter<InfographicBuilderState> emit,
+  ) {
+    SavedInfographicTemplate? template;
+
+    for (final item in state.templates) {
+      if (item.id == event.templateId) {
+        template = item;
+        break;
+      }
+    }
+
+    emit(
+      state.copyWith(
+        selectedTemplateId: event.templateId,
+        updateSelectedTemplateId: true,
+        visualType: _visualTypeFromTemplate(template) ?? state.visualType,
+        colorScheme: _colorSchemeFromTemplate(template) ?? state.colorScheme,
         clearResult: true,
         clearMessage: true,
       ),
@@ -199,7 +227,9 @@ class InfographicBuilderBloc
       await _savedInfographicsRepository.saveInfographic(
         title: event.title,
         chartType: state.visualType.apiValue,
+        templateId: state.selectedTemplateId,
         parameters: {
+          'templateId': state.selectedTemplateId,
           'groupId': state.selectedGroupId,
           'disciplineId': state.selectedDisciplineId,
           'periodId': state.selectedPeriodId,
@@ -260,7 +290,13 @@ class InfographicBuilderBloc
     );
 
     try {
-      final data = await _educationalDataRepository.loadAll();
+      final responses = await Future.wait<dynamic>([
+        _educationalDataRepository.loadAll(),
+        _savedInfographicsRepository.loadTemplates(),
+      ]);
+
+      final data = responses[0] as EducationalDataBundle;
+      final templates = responses[1] as List<SavedInfographicTemplate>;
 
       emit(
         state.copyWith(
@@ -271,6 +307,7 @@ class InfographicBuilderBloc
           students: data.students,
           grades: data.grades,
           attendance: _readAttendanceFromBundle(data),
+          templates: templates,
           clearMessage: true,
           clearResult: true,
         ),
@@ -720,6 +757,39 @@ class InfographicBuilderBloc
     }
 
     return attended / total * 100;
+  }
+
+  InfographicVisualType? _visualTypeFromTemplate(
+    SavedInfographicTemplate? template,
+  ) {
+    switch (template?.chartType) {
+      case 'bar':
+        return InfographicVisualType.bar;
+      case 'line':
+        return InfographicVisualType.line;
+      case 'pie':
+      case 'doughnut':
+        return InfographicVisualType.pie;
+      default:
+        return null;
+    }
+  }
+
+  InfographicColorScheme? _colorSchemeFromTemplate(
+    SavedInfographicTemplate? template,
+  ) {
+    switch (template?.colorScheme) {
+      case 'blue':
+        return InfographicColorScheme.blue;
+      case 'green':
+        return InfographicColorScheme.green;
+      case 'orange':
+        return InfographicColorScheme.orange;
+      case 'purple':
+        return InfographicColorScheme.purple;
+      default:
+        return null;
+    }
   }
 
   int? _readIntFromData(dynamic data, String field) {

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:client/src/app/app_theme.dart';
 import 'package:client/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:client/src/features/educational_data/data/educational_data_models.dart';
 import 'package:client/src/features/educational_data/data/educational_data_repository.dart';
 import 'package:client/src/features/educational_data/presentation/bloc/educational_data_bloc.dart';
 import 'package:client/src/features/educational_data/presentation/widgets/attendance_widgets.dart';
+import 'package:client/src/features/educational_data/presentation/widgets/csv_import_dialog.dart';
 import 'package:client/src/features/educational_data/presentation/widgets/grades_widgets.dart';
 import 'package:client/src/shared/models/app_user.dart';
 
@@ -53,111 +55,52 @@ class _EducationalDataView extends StatelessWidget {
         return Stack(
           children: [
             ListView(
+              padding: const EdgeInsets.only(bottom: 28),
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Учебные данные',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: Theme.of(context).textTheme.headlineMedium,
                       ),
                     ),
-                    if (isAdmin)
-                      PopupMenuButton<_AddEntityType>(
-                        enabled: !state.isBusy,
-                        tooltip: 'Добавить',
-                        onSelected: (type) => _openCreateDialog(
-                          context: context,
-                          type: type,
-                          state: state,
-                        ),
-                        itemBuilder: (context) => const [
-                          PopupMenuItem(
-                            value: _AddEntityType.group,
-                            child: Text('Добавить группу'),
-                          ),
-                          PopupMenuItem(
-                            value: _AddEntityType.discipline,
-                            child: Text('Добавить дисциплину'),
-                          ),
-                          PopupMenuItem(
-                            value: _AddEntityType.period,
-                            child: Text('Добавить период'),
-                          ),
-                          PopupMenuItem(
-                            value: _AddEntityType.student,
-                            child: Text('Добавить студента'),
-                          ),
-                          PopupMenuItem(
-                            value: _AddEntityType.grade,
-                            child: Text('Добавить оценку'),
-                          ),
-                          PopupMenuItem(
-                            value: _AddEntityType.attendance,
-                            child: Text('Добавить посещаемость'),
-                          ),
-                        ],
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            color: state.isBusy
-                                ? Colors.grey.shade300
-                                : Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.add_rounded,
-                                color: Colors.white,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Добавить',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              SizedBox(width: 4),
-                              Icon(
-                                Icons.keyboard_arrow_down_rounded,
-                                color: Colors.white,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    if (isAdmin) const SizedBox(width: 12),
-                    OutlinedButton.icon(
+                    _ToolbarButton(
+                      icon: Icons.refresh_rounded,
+                      label: 'Обновить',
+                      disabled: state.isBusy,
                       onPressed: state.isBusy
                           ? null
                           : () {
-                              context
-                                  .read<EducationalDataBloc>()
-                                  .add(const EducationalDataRefreshRequested());
+                              context.read<EducationalDataBloc>().add(
+                                    const EducationalDataRefreshRequested(),
+                                  );
                             },
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Обновить'),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 const Text(
-                  'Раздел предназначен для просмотра и администрирования учебных групп, дисциплин, учебных периодов, студентов, оценок и посещаемости.',
+                  'Просмотр и администрирование учебных групп, дисциплин, периодов, студентов, оценок и посещаемости.',
                   style: TextStyle(
-                    color: Color(0xFF6B7280),
-                    height: 1.4,
+                    color: AppTheme.mutedTextColor,
+                    height: 1.45,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 22),
+                _EducationalToolbarCard(
+                  isAdmin: isAdmin,
+                  isBusy: state.isBusy,
+                  onCreateSelected: (type) => _openCreateDialog(
+                    context: context,
+                    type: type,
+                    state: state,
+                  ),
+                  onImport: () => _openImportDialog(context),
+                ),
+                const SizedBox(height: 22),
                 if (showInitialLoading)
                   const _LoadingCard()
                 else if (state.status == EducationalDataStatus.failure &&
@@ -174,7 +117,7 @@ class _EducationalDataView extends StatelessWidget {
               Positioned.fill(
                 child: IgnorePointer(
                   child: Container(
-                    color: Colors.white.withOpacity(0.45),
+                    color: Colors.white.withOpacity(0.55),
                     child: const Center(
                       child: CircularProgressIndicator(),
                     ),
@@ -185,6 +128,25 @@ class _EducationalDataView extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _openImportDialog(BuildContext context) async {
+    final result = await showDialog<CsvImportDialogResult>(
+      context: context,
+      builder: (_) => const CsvImportDialog(),
+    );
+
+    if (result == null || !context.mounted) {
+      return;
+    }
+
+    context.read<EducationalDataBloc>().add(
+          EducationalCsvImportRequested(
+            importType: result.importType,
+            fileName: result.fileName,
+            csvText: result.csvText,
+          ),
+        );
   }
 
   Future<void> _openCreateDialog({
@@ -371,6 +333,224 @@ enum _AddEntityType {
   attendance,
 }
 
+class _EducationalToolbarCard extends StatelessWidget {
+  final bool isAdmin;
+  final bool isBusy;
+  final ValueChanged<_AddEntityType> onCreateSelected;
+  final VoidCallback onImport;
+
+  const _EducationalToolbarCard({
+    required this.isAdmin,
+    required this.isBusy,
+    required this.onCreateSelected,
+    required this.onImport,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: AppTheme.softBlueColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.dataset_rounded,
+                color: AppTheme.primaryColor,
+                size: 30,
+              ),
+            ),
+            const SizedBox(width: 18),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Работа с учебными данными',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.textColor,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'Добавляйте записи, импортируйте CSV-файлы и контролируйте данные, которые используются для построения инфографики.',
+                    style: TextStyle(
+                      color: AppTheme.mutedTextColor,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isAdmin) ...[
+              const SizedBox(width: 20),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  PopupMenuButton<_AddEntityType>(
+                    enabled: !isBusy,
+                    tooltip: 'Добавить данные',
+                    onSelected: onCreateSelected,
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: _AddEntityType.group,
+                        child: Text('Добавить группу'),
+                      ),
+                      PopupMenuItem(
+                        value: _AddEntityType.discipline,
+                        child: Text('Добавить дисциплину'),
+                      ),
+                      PopupMenuItem(
+                        value: _AddEntityType.period,
+                        child: Text('Добавить период'),
+                      ),
+                      PopupMenuItem(
+                        value: _AddEntityType.student,
+                        child: Text('Добавить студента'),
+                      ),
+                      PopupMenuItem(
+                        value: _AddEntityType.grade,
+                        child: Text('Добавить оценку'),
+                      ),
+                      PopupMenuItem(
+                        value: _AddEntityType.attendance,
+                        child: Text('Добавить посещаемость'),
+                      ),
+                    ],
+                    child: _ToolbarButton(
+                      icon: Icons.add_rounded,
+                      label: 'Добавить',
+                      isPrimary: true,
+                      disabled: isBusy,
+                      trailingIcon: Icons.keyboard_arrow_down_rounded,
+                    ),
+                  ),
+                  _ToolbarButton(
+                    icon: Icons.file_upload_rounded,
+                    label: 'Импорт CSV',
+                    disabled: isBusy,
+                    onPressed: isBusy ? null : onImport,
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ToolbarButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isPrimary;
+  final bool disabled;
+  final IconData? trailingIcon;
+  final VoidCallback? onPressed;
+
+  const _ToolbarButton({
+    required this.icon,
+    required this.label,
+    this.isPrimary = false,
+    this.disabled = false,
+    this.trailingIcon,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveDisabled = disabled || onPressed == null && !isPrimary;
+    final backgroundColor = disabled
+        ? const Color(0xFFBFDBFE)
+        : isPrimary
+            ? AppTheme.primaryColor
+            : Colors.white;
+
+    final foregroundColor = disabled
+        ? Colors.white70
+        : isPrimary
+            ? Colors.white
+            : AppTheme.primaryColor;
+
+    const borderColor = AppTheme.primaryColor;
+
+    final button = Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: disabled ? const Color(0xFFBFDBFE) : borderColor,
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: foregroundColor,
+            size: 22,
+          ),
+          const SizedBox(width: 9),
+          Text(
+            label,
+            strutStyle: const StrutStyle(
+              height: 1.0,
+              forceStrutHeight: true,
+            ),
+            style: TextStyle(
+              color: foregroundColor,
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+              height: 1.0,
+            ),
+          ),
+          if (trailingIcon != null) ...[
+            const SizedBox(width: 7),
+            Icon(
+              trailingIcon,
+              color: foregroundColor,
+              size: 22,
+            ),
+          ],
+        ],
+      ),
+    );
+
+    if (onPressed == null) {
+      return button;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: effectiveDisabled ? null : onPressed,
+        borderRadius: BorderRadius.circular(18),
+        child: button,
+      ),
+    );
+  }
+}
+
 class _LoadingCard extends StatelessWidget {
   const _LoadingCard();
 
@@ -434,7 +614,52 @@ class _ErrorCard extends StatelessWidget {
   }
 }
 
-class _LoadedContent extends StatelessWidget {
+enum _EducationalDataSection {
+  groups,
+  disciplines,
+  periods,
+  students,
+  grades,
+  attendance,
+}
+
+extension _EducationalDataSectionExtension on _EducationalDataSection {
+  String get title {
+    switch (this) {
+      case _EducationalDataSection.groups:
+        return 'Учебные группы';
+      case _EducationalDataSection.disciplines:
+        return 'Дисциплины';
+      case _EducationalDataSection.periods:
+        return 'Периоды';
+      case _EducationalDataSection.students:
+        return 'Студенты';
+      case _EducationalDataSection.grades:
+        return 'Оценки';
+      case _EducationalDataSection.attendance:
+        return 'Посещаемость';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case _EducationalDataSection.groups:
+        return Icons.groups_rounded;
+      case _EducationalDataSection.disciplines:
+        return Icons.menu_book_rounded;
+      case _EducationalDataSection.periods:
+        return Icons.calendar_month_rounded;
+      case _EducationalDataSection.students:
+        return Icons.school_rounded;
+      case _EducationalDataSection.grades:
+        return Icons.grade_rounded;
+      case _EducationalDataSection.attendance:
+        return Icons.event_available_rounded;
+    }
+  }
+}
+
+class _LoadedContent extends StatefulWidget {
   final EducationalDataState state;
   final bool isAdmin;
 
@@ -444,16 +669,20 @@ class _LoadedContent extends StatelessWidget {
   });
 
   @override
+  State<_LoadedContent> createState() => _LoadedContentState();
+}
+
+class _LoadedContentState extends State<_LoadedContent> {
+  _EducationalDataSection _section = _EducationalDataSection.groups;
+
+  @override
   Widget build(BuildContext context) {
+    final state = widget.state;
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GridView.count(
-          crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 6 : 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: MediaQuery.of(context).size.width > 1200 ? 1.55 : 1.75,
+        _SummaryCardsGrid(
           children: [
             _SummaryCard(
               title: 'Группы',
@@ -488,76 +717,152 @@ class _LoadedContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
+        _EducationalSectionSelector(
+          section: _section,
+          onChanged: (section) {
+            setState(() {
+              _section = section;
+            });
+          },
+        ),
+        const SizedBox(height: 20),
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: DefaultTabController(
-              length: 6,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const TabBar(
-                    isScrollable: true,
-                    tabs: [
-                      Tab(text: 'Учебные группы'),
-                      Tab(text: 'Дисциплины'),
-                      Tab(text: 'Периоды'),
-                      Tab(text: 'Студенты'),
-                      Tab(text: 'Оценки'),
-                      Tab(text: 'Посещаемость'),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 430,
-                    child: TabBarView(
-                      children: [
-                        _GroupsTable(
-                          groups: state.groups,
-                          isAdmin: isAdmin,
-                          isBusy: state.isBusy,
-                        ),
-                        _DisciplinesTable(
-                          disciplines: state.disciplines,
-                          isAdmin: isAdmin,
-                          isBusy: state.isBusy,
-                        ),
-                        _PeriodsTable(
-                          periods: state.periods,
-                          isAdmin: isAdmin,
-                          isBusy: state.isBusy,
-                        ),
-                        _StudentsTable(
-                          students: state.students,
-                          groups: state.groups,
-                          isAdmin: isAdmin,
-                          isBusy: state.isBusy,
-                        ),
-                        GradesTable(
-                          grades: state.grades,
-                          students: state.students,
-                          disciplines: state.disciplines,
-                          periods: state.periods,
-                          isAdmin: isAdmin,
-                          isBusy: state.isBusy,
-                        ),
-                        AttendanceTable(
-                          attendance: state.attendance,
-                          students: state.students,
-                          disciplines: state.disciplines,
-                          periods: state.periods,
-                          isAdmin: isAdmin,
-                          isBusy: state.isBusy,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            padding: const EdgeInsets.all(20),
+            child: SizedBox(
+              height: 540,
+              child: _buildSelectedTable(state),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSelectedTable(EducationalDataState state) {
+    switch (_section) {
+      case _EducationalDataSection.groups:
+        return _GroupsTable(
+          groups: state.groups,
+          isAdmin: widget.isAdmin,
+          isBusy: state.isBusy,
+        );
+      case _EducationalDataSection.disciplines:
+        return _DisciplinesTable(
+          disciplines: state.disciplines,
+          isAdmin: widget.isAdmin,
+          isBusy: state.isBusy,
+        );
+      case _EducationalDataSection.periods:
+        return _PeriodsTable(
+          periods: state.periods,
+          isAdmin: widget.isAdmin,
+          isBusy: state.isBusy,
+        );
+      case _EducationalDataSection.students:
+        return _StudentsTable(
+          students: state.students,
+          groups: state.groups,
+          isAdmin: widget.isAdmin,
+          isBusy: state.isBusy,
+        );
+      case _EducationalDataSection.grades:
+        return GradesTable(
+          grades: state.grades,
+          students: state.students,
+          disciplines: state.disciplines,
+          periods: state.periods,
+          isAdmin: widget.isAdmin,
+          isBusy: state.isBusy,
+        );
+      case _EducationalDataSection.attendance:
+        return AttendanceTable(
+          attendance: state.attendance,
+          students: state.students,
+          disciplines: state.disciplines,
+          periods: state.periods,
+          isAdmin: widget.isAdmin,
+          isBusy: state.isBusy,
+        );
+    }
+  }
+}
+
+class _SummaryCardsGrid extends StatelessWidget {
+  final List<Widget> children;
+
+  const _SummaryCardsGrid({
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 12.0;
+        const minItemWidth = 170.0;
+
+        final availableWidth = constraints.maxWidth;
+        final columns = (availableWidth / minItemWidth).floor().clamp(2, 6);
+        final itemWidth =
+            (availableWidth - spacing * (columns - 1)) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: children.map((child) {
+            return SizedBox(
+              width: itemWidth,
+              height: 82,
+              child: child,
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+}
+
+class _EducationalSectionSelector extends StatelessWidget {
+  final _EducationalDataSection section;
+  final ValueChanged<_EducationalDataSection> onChanged;
+
+  const _EducationalSectionSelector({
+    required this.section,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final items = _EducationalDataSection.values;
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: items.map((item) {
+        final selected = item == section;
+
+        return ChoiceChip(
+          selected: selected,
+          showCheckmark: false,
+          avatar: Icon(
+            item.icon,
+            size: 18,
+            color: selected
+                ? AppTheme.primaryColor
+                : const Color(0xFF6B7280),
+          ),
+          label: Text(
+            item.title,
+            strutStyle: const StrutStyle(
+              height: 1.0,
+              forceStrutHeight: true,
+            ),
+          ),
+          onSelected: (_) => onChanged(item),
+        );
+      }).toList(),
     );
   }
 }
@@ -575,46 +880,74 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Icon(
+    return Container(
+      height: 82,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.borderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppTheme.softBlueColor,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
               icon,
-              color: Theme.of(context).colorScheme.primary,
-              size: 32,
+              color: AppTheme.primaryColor,
+              size: 24,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                    ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  strutStyle: const StrutStyle(
+                    height: 1.0,
+                    forceStrutHeight: true,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF6B7280),
-                      height: 1.1,
-                    ),
+                  style: const TextStyle(
+                    color: AppTheme.textColor,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    height: 1.0,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  strutStyle: const StrutStyle(
+                    height: 1.0,
+                    forceStrutHeight: true,
+                  ),
+                  style: const TextStyle(
+                    color: AppTheme.mutedTextColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    height: 1.0,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1090,12 +1423,30 @@ class _TableScroll extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scrollbar(
-      thumbVisibility: true,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SingleChildScrollView(
-          child: child,
+    final tableWidth = MediaQuery.of(context).size.width - 360;
+    final minTableWidth = tableWidth > 0 ? tableWidth : 0.0;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.borderColor),
+        ),
+        child: Scrollbar(
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: minTableWidth,
+                ),
+                child: child,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -1115,20 +1466,95 @@ class _TableActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          tooltip: 'Редактировать',
-          onPressed: isBusy ? null : onEdit,
-          icon: const Icon(Icons.edit_rounded),
+    return SizedBox(
+      width: 282,
+      height: 44,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _SmallActionButton(
+            icon: Icons.edit_rounded,
+            label: 'Изменить',
+            onPressed: isBusy ? null : onEdit,
+          ),
+          const SizedBox(width: 10),
+          _SmallActionButton(
+            icon: Icons.delete_outline_rounded,
+            label: 'Удалить',
+            onPressed: isBusy ? null : onDelete,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SmallActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _SmallActionButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onPressed == null;
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          width: 136,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: disabled
+                  ? const Color(0xFFD1D5DB)
+                  : AppTheme.primaryColor,
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 19,
+                color: disabled
+                    ? const Color(0xFF9CA3AF)
+                    : AppTheme.primaryColor,
+              ),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                strutStyle: const StrutStyle(
+                  height: 1.0,
+                  forceStrutHeight: true,
+                ),
+                style: TextStyle(
+                  color: disabled
+                      ? const Color(0xFF9CA3AF)
+                      : AppTheme.primaryColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  height: 1.0,
+                ),
+              ),
+            ],
+          ),
         ),
-        IconButton(
-          tooltip: 'Удалить',
-          onPressed: isBusy ? null : onDelete,
-          icon: const Icon(Icons.delete_rounded),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -1143,10 +1569,41 @@ class _EmptyListMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Color(0xFF6B7280),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.all(2),
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppTheme.borderColor),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: AppTheme.softBlueColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.info_outline_rounded,
+                color: AppTheme.primaryColor,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.mutedTextColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

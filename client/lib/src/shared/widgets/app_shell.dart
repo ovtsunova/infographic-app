@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:client/src/app/app_theme.dart';
 import 'package:client/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:client/src/shared/models/app_user.dart';
 
@@ -62,10 +63,15 @@ class _DesktopShell extends StatelessWidget {
             role: currentRole,
           ),
           Expanded(
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: child,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                color: AppTheme.backgroundColor,
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: child,
+                ),
               ),
             ),
           ),
@@ -113,7 +119,7 @@ class _MobileShell extends StatelessWidget {
       case '/':
         return 'Главная';
       case '/dashboard':
-        return 'Панель';
+        return 'Рабочая область';
       case '/educational-data':
         return 'Учебные данные';
       case '/infographic-builder':
@@ -125,7 +131,7 @@ class _MobileShell extends StatelessWidget {
       case '/admin':
         return 'Администрирование';
       default:
-        return 'Инфографика';
+        return 'EduInfo';
     }
   }
 }

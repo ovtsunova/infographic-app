@@ -30,6 +30,14 @@ class AppPaths {
   static const String admin = '/admin';
 }
 
+String getAuthenticatedStartPath(AppUserRole role) {
+  if (role.isAdmin) {
+    return AppPaths.admin;
+  }
+
+  return AppPaths.educationalData;
+}
+
 GoRouter createAppRouter(AuthBloc authBloc) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -107,8 +115,7 @@ String? _authRedirect({
 
   final isPublicPage = path == AppPaths.home || isAuthPage;
 
-  final isUserPage = path == AppPaths.dashboard ||
-      path == AppPaths.educationalData ||
+  final isUserPage = path == AppPaths.educationalData ||
       path == AppPaths.infographicBuilder ||
       path == AppPaths.savedInfographics ||
       path == AppPaths.profile;
@@ -126,7 +133,11 @@ String? _authRedirect({
   }
 
   if (isAuthenticated && isAuthPage) {
-    return AppPaths.dashboard;
+    return getAuthenticatedStartPath(authState.role);
+  }
+
+  if (path == AppPaths.dashboard) {
+    return getAuthenticatedStartPath(authState.role);
   }
 
   if (isUserPage) {
@@ -138,7 +149,7 @@ String? _authRedirect({
   }
 
   if (isAdminPage && !authState.role.isAdmin) {
-    return AppPaths.dashboard;
+    return getAuthenticatedStartPath(authState.role);
   }
 
   return null;

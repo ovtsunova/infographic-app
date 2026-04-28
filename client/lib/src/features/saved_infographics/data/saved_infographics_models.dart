@@ -39,6 +39,46 @@ class SavedInfographic {
   }
 }
 
+
+class SavedInfographicTemplate {
+  final int id;
+  final String templateName;
+  final String chartType;
+  final String colorScheme;
+  final String? description;
+  final bool isActive;
+
+  const SavedInfographicTemplate({
+    required this.id,
+    required this.templateName,
+    required this.chartType,
+    required this.colorScheme,
+    required this.description,
+    required this.isActive,
+  });
+
+  factory SavedInfographicTemplate.fromJson(Map<String, dynamic> json) {
+    return SavedInfographicTemplate(
+      id: _readInt(json['id']),
+      templateName: _readString(json['templateName']),
+      chartType: _readString(json['chartType']),
+      colorScheme: _readString(json['colorScheme']),
+      description: _readNullableString(json['description']),
+      isActive: _readBool(json['isActive']),
+    );
+  }
+
+  String get title {
+    final parts = [
+      templateName,
+      _chartTypeTitle(chartType),
+      _colorSchemeTitle(colorScheme),
+    ].where((part) => part.trim().isNotEmpty).toList();
+
+    return parts.join(' • ');
+  }
+}
+
 int _readInt(dynamic value) {
   if (value is int) {
     return value;
@@ -79,6 +119,51 @@ String? _readNullableString(dynamic value) {
   }
 
   return text;
+}
+
+
+bool _readBool(dynamic value) {
+  if (value is bool) {
+    return value;
+  }
+
+  final text = value?.toString().trim().toLowerCase();
+
+  return text == 'true' || text == '1' || text == 'yes';
+}
+
+String _chartTypeTitle(String value) {
+  switch (value) {
+    case 'bar':
+      return 'столбчатая';
+    case 'line':
+      return 'линейная';
+    case 'pie':
+      return 'круговая';
+    case 'doughnut':
+      return 'кольцевая';
+    case 'card':
+      return 'карточки';
+    default:
+      return value;
+  }
+}
+
+String _colorSchemeTitle(String value) {
+  switch (value) {
+    case 'blue':
+      return 'синяя';
+    case 'green':
+      return 'зелёная';
+    case 'orange':
+      return 'оранжевая';
+    case 'purple':
+      return 'фиолетовая';
+    case 'default':
+      return 'по умолчанию';
+    default:
+      return value;
+  }
 }
 
 Map<String, dynamic> _readMap(dynamic value) {

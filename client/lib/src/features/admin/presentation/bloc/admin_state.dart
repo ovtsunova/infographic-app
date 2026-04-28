@@ -11,7 +11,9 @@ enum AdminStatus {
 enum AdminSection {
   overview,
   users,
+  templates,
   audit,
+  backups,
 }
 
 class AdminState extends Equatable {
@@ -21,6 +23,8 @@ class AdminState extends Equatable {
   final List<AdminUser> users;
   final List<AdminRole> roles;
   final List<AdminAuditLog> auditLogs;
+  final List<AdminTemplate> templates;
+  final List<AdminBackupFile> backupFiles;
   final String searchQuery;
   final String? message;
   final bool messageIsError;
@@ -32,6 +36,8 @@ class AdminState extends Equatable {
     required this.users,
     required this.roles,
     required this.auditLogs,
+    required this.templates,
+    required this.backupFiles,
     required this.searchQuery,
     required this.message,
     required this.messageIsError,
@@ -44,6 +50,8 @@ class AdminState extends Equatable {
         users = const [],
         roles = const [],
         auditLogs = const [],
+        templates = const [],
+        backupFiles = const [],
         searchQuery = '',
         message = null,
         messageIsError = false;
@@ -56,11 +64,17 @@ class AdminState extends Equatable {
     return (status == AdminStatus.initial || status == AdminStatus.loading) &&
         dashboard == null &&
         users.isEmpty &&
-        auditLogs.isEmpty;
+        auditLogs.isEmpty &&
+        templates.isEmpty &&
+        backupFiles.isEmpty;
   }
 
   bool get hasAnyData {
-    return dashboard != null || users.isNotEmpty || auditLogs.isNotEmpty;
+    return dashboard != null ||
+        users.isNotEmpty ||
+        auditLogs.isNotEmpty ||
+        templates.isNotEmpty ||
+        backupFiles.isNotEmpty;
   }
 
   List<AdminUser> get filteredUsers {
@@ -91,6 +105,8 @@ class AdminState extends Equatable {
     List<AdminUser>? users,
     List<AdminRole>? roles,
     List<AdminAuditLog>? auditLogs,
+    List<AdminTemplate>? templates,
+    List<AdminBackupFile>? backupFiles,
     String? searchQuery,
     String? message,
     bool clearMessage = false,
@@ -103,6 +119,8 @@ class AdminState extends Equatable {
       users: users ?? this.users,
       roles: roles ?? this.roles,
       auditLogs: auditLogs ?? this.auditLogs,
+      templates: templates ?? this.templates,
+      backupFiles: backupFiles ?? this.backupFiles,
       searchQuery: searchQuery ?? this.searchQuery,
       message: clearMessage ? null : message ?? this.message,
       messageIsError: clearMessage
@@ -119,6 +137,8 @@ class AdminState extends Equatable {
         users,
         roles,
         auditLogs,
+        templates,
+        backupFiles,
         searchQuery,
         message,
         messageIsError,

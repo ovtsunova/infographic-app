@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:client/src/app/app_router.dart';
 import 'package:client/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:client/src/shared/models/app_user.dart';
 
@@ -11,184 +13,90 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
+        final role = authState.role;
         final user = authState.user;
 
-        return ListView(
-          children: [
-            Text(
-              user == null
-                  ? 'Панель пользователя'
-                  : 'Здравствуйте, ${user.fullName}',
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              user == null
-                  ? 'Краткая сводка по загруженным учебным данным, сохранённым инфографикам и последним действиям.'
-                  : 'Вы вошли в систему как: ${user.role.title}',
-              style: const TextStyle(
-                color: Color(0xFF6B7280),
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 24),
-            GridView.count(
-              crossAxisCount: MediaQuery.of(context).size.width > 1100 ? 4 : 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.8,
-              children: const [
-                _StatCard(
-                  title: 'Группы',
-                  value: '0',
-                  icon: Icons.groups_rounded,
-                ),
-                _StatCard(
-                  title: 'Студенты',
-                  value: '0',
-                  icon: Icons.school_rounded,
-                ),
-                _StatCard(
-                  title: 'Инфографики',
-                  value: '0',
-                  icon: Icons.insert_chart_rounded,
-                ),
-                _StatCard(
-                  title: 'Экспорты',
-                  value: '0',
-                  icon: Icons.file_download_rounded,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Card(
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!context.mounted) {
+            return;
+          }
+
+          if (role == AppUserRole.admin) {
+            context.go(AppPaths.admin);
+            return;
+          }
+
+          if (role == AppUserRole.user) {
+            context.go(AppPaths.educationalData);
+            return;
+          }
+
+          context.go(AppPaths.home);
+        });
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Card(
               child: Padding(
-                padding: const EdgeInsets.all(22),
+                padding: const EdgeInsets.all(28),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Текущее состояние',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF4FF),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.dashboard_customize_rounded,
+                        color: Color(0xFF2F67F6),
+                        size: 34,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    _InfoRow(
-                      label: 'Статус авторизации',
-                      value: authState.isAuthenticated
-                          ? 'Пользователь авторизован'
-                          : 'Пользователь не авторизован',
+                    const SizedBox(height: 18),
+                    Text(
+                      user == null
+                          ? 'Переход в приложение'
+                          : 'Здравствуйте, ${user.fullName}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF172033),
+                      ),
                     ),
-                    _InfoRow(
-                      label: 'Email',
-                      value: user?.email ?? 'Не указан',
+                    const SizedBox(height: 8),
+                    Text(
+                      'Выполняется переход в подходящий раздел. Роль пользователя: ${_roleTitle(role)}.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF6B7280),
+                        height: 1.45,
+                      ),
                     ),
-                    _InfoRow(
-                      label: 'Роль',
-                      value: user?.role.title ?? 'Гость',
-                    ),
+                    const SizedBox(height: 22),
+                    const CircularProgressIndicator(),
                   ],
                 ),
               ),
             ),
-          ],
+          ),
         );
       },
     );
   }
-}
 
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 34,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 16),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _InfoRow({
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 190,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF6B7280),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  static String _roleTitle(AppUserRole role) {
+    switch (role) {
+      case AppUserRole.admin:
+        return 'Администратор';
+      case AppUserRole.user:
+        return 'Пользователь';
+      case AppUserRole.guest:
+        return 'Гость';
+    }
   }
 }

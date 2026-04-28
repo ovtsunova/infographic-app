@@ -48,6 +48,18 @@ class InfographicPeriodChanged extends InfographicBuilderEvent {
   List<Object?> get props => [periodId];
 }
 
+
+class InfographicTemplateChanged extends InfographicBuilderEvent {
+  final int? templateId;
+
+  const InfographicTemplateChanged({
+    required this.templateId,
+  });
+
+  @override
+  List<Object?> get props => [templateId];
+}
+
 class InfographicChartTypeChanged extends InfographicBuilderEvent {
   final InfographicChartType chartType;
 

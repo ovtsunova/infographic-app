@@ -89,6 +89,48 @@ class AuthRepository {
     }
   }
 
+  Future<AppUser> updateProfile({
+    required String lastName,
+    required String firstName,
+    required String? patronymic,
+  }) async {
+    try {
+      await _apiClient.dio.put(
+        '/auth/profile',
+        data: {
+          'lastName': lastName.trim(),
+          'firstName': firstName.trim(),
+          'patronymic': patronymic?.trim(),
+        },
+      );
+
+      return getMe();
+    } on DioException catch (error) {
+      throw AuthException(_readErrorMessage(error));
+    } catch (error) {
+      throw AuthException(error.toString());
+    }
+  }
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _apiClient.dio.put(
+        '/auth/password',
+        data: {
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+        },
+      );
+    } on DioException catch (error) {
+      throw AuthException(_readErrorMessage(error));
+    } catch (error) {
+      throw AuthException(error.toString());
+    }
+  }
+
   Future<void> logout() async {
     await _storage.clearToken();
   }

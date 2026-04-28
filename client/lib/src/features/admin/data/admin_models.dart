@@ -138,6 +138,97 @@ class AdminAuditLog {
   }
 }
 
+class AdminBackupFile {
+  final String fileName;
+  final int sizeBytes;
+  final String createdAt;
+  final String modifiedAt;
+  final String extension;
+
+  const AdminBackupFile({
+    required this.fileName,
+    required this.sizeBytes,
+    required this.createdAt,
+    required this.modifiedAt,
+    required this.extension,
+  });
+
+  factory AdminBackupFile.fromJson(Map<String, dynamic> json) {
+    return AdminBackupFile(
+      fileName: _readString(json['fileName']),
+      sizeBytes: _readInt(json['sizeBytes']),
+      createdAt: _readString(json['createdAt']),
+      modifiedAt: _readString(json['modifiedAt']),
+      extension: _readString(json['extension']),
+    );
+  }
+
+  String get sizeTitle {
+    if (sizeBytes < 1024) {
+      return '$sizeBytes Б';
+    }
+
+    if (sizeBytes < 1024 * 1024) {
+      final kb = sizeBytes / 1024;
+      return '${kb.toStringAsFixed(1)} КБ';
+    }
+
+    final mb = sizeBytes / (1024 * 1024);
+    return '${mb.toStringAsFixed(2)} МБ';
+  }
+}
+
+
+class AdminTemplate {
+  final int id;
+  final String templateName;
+  final String chartType;
+  final String colorScheme;
+  final String? description;
+  final bool isActive;
+
+  const AdminTemplate({
+    required this.id,
+    required this.templateName,
+    required this.chartType,
+    required this.colorScheme,
+    required this.description,
+    required this.isActive,
+  });
+
+  factory AdminTemplate.fromJson(Map<String, dynamic> json) {
+    return AdminTemplate(
+      id: _readInt(json['id']),
+      templateName: _readString(json['templateName']),
+      chartType: _readString(json['chartType']),
+      colorScheme: _readString(json['colorScheme']),
+      description: _readNullableString(json['description']),
+      isActive: _readBool(json['isActive']),
+    );
+  }
+
+  String get chartTypeTitle {
+    switch (chartType) {
+      case 'bar':
+        return 'Столбчатая';
+      case 'line':
+        return 'Линейная';
+      case 'pie':
+        return 'Круговая';
+      case 'doughnut':
+        return 'Кольцевая';
+      case 'card':
+        return 'Карточки';
+      default:
+        return chartType.isEmpty ? 'Не указан' : chartType;
+    }
+  }
+
+  String get statusTitle {
+    return isActive ? 'Активен' : 'Отключен';
+  }
+}
+
 int _readInt(dynamic value) {
   if (value is int) {
     return value;

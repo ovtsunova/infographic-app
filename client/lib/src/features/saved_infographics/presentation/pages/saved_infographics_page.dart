@@ -283,9 +283,21 @@ class _SavedInfographicCardState extends State<_SavedInfographicCard> {
         throw Exception('Не удалось сформировать PNG-файл.');
       }
 
+      final fileName = '${_safeFileName(widget.item.title)}.png';
+
+      if (!mounted) {
+        return;
+      }
+
+      await context.read<SavedInfographicsRepository>().recordExport(
+            infographicId: widget.item.id,
+            fileName: fileName,
+            fileFormat: 'PNG',
+          );
+
       downloadFile(
         bytes: bytes,
-        fileName: '${_safeFileName(widget.item.title)}.png',
+        fileName: fileName,
         mimeType: 'image/png',
       );
 

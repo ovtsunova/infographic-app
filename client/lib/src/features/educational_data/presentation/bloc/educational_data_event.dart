@@ -1,5 +1,35 @@
 part of 'educational_data_bloc.dart';
 
+enum EducationalCsvImportType {
+  students,
+  grades,
+  attendance,
+}
+
+extension EducationalCsvImportTypeX on EducationalCsvImportType {
+  String get title {
+    switch (this) {
+      case EducationalCsvImportType.students:
+        return 'Студенты';
+      case EducationalCsvImportType.grades:
+        return 'Оценки';
+      case EducationalCsvImportType.attendance:
+        return 'Посещаемость';
+    }
+  }
+
+  String get endpoint {
+    switch (this) {
+      case EducationalCsvImportType.students:
+        return '/import/students';
+      case EducationalCsvImportType.grades:
+        return '/import/grades';
+      case EducationalCsvImportType.attendance:
+        return '/import/attendance';
+    }
+  }
+}
+
 abstract class EducationalDataEvent extends Equatable {
   const EducationalDataEvent();
 
@@ -380,3 +410,23 @@ class EducationalAttendanceDeleteRequested extends EducationalDataEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class EducationalCsvImportRequested extends EducationalDataEvent {
+  final EducationalCsvImportType importType;
+  final String fileName;
+  final String csvText;
+
+  const EducationalCsvImportRequested({
+    required this.importType,
+    required this.fileName,
+    required this.csvText,
+  });
+
+  @override
+  List<Object?> get props => [
+        importType,
+        fileName,
+        csvText,
+      ];
+}
+

@@ -65,22 +65,45 @@ class AttendanceTable extends StatelessWidget {
                   DataCell(Text('${record.attendanceRate.toStringAsFixed(2)}%')),
                   if (isAdmin)
                     DataCell(
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
                         children: [
-                          IconButton(
-                            tooltip: 'Редактировать',
+                          OutlinedButton.icon(
                             onPressed: isBusy
                                 ? null
                                 : () => _openEditDialog(context, record),
-                            icon: const Icon(Icons.edit_rounded),
+                            icon: const Icon(Icons.edit_rounded, size: 18),
+                            label: const Text('Изменить'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
-                          IconButton(
-                            tooltip: 'Удалить',
+                          OutlinedButton.icon(
                             onPressed: isBusy
                                 ? null
                                 : () => _openDeleteDialog(context, record),
-                            icon: const Icon(Icons.delete_rounded),
+                            icon: const Icon(Icons.delete_rounded, size: 18),
+                            label: const Text('Удалить'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ],
                       ),

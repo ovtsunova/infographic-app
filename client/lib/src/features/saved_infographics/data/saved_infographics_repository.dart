@@ -24,6 +24,21 @@ class SavedInfographicsRepository {
     }
   }
 
+
+  Future<List<SavedInfographicTemplate>> loadTemplates() async {
+    try {
+      final response = await _apiClient.dio.get('/infographics/templates');
+
+      return _readDataList(response.data)
+          .map(SavedInfographicTemplate.fromJson)
+          .toList();
+    } on DioException catch (error) {
+      throw SavedInfographicsException(_readErrorMessage(error));
+    } catch (error) {
+      throw SavedInfographicsException(error.toString());
+    }
+  }
+
   Future<void> saveInfographic({
     required String title,
     required String chartType,
@@ -40,6 +55,26 @@ class SavedInfographicsRepository {
           'templateId': templateId,
           'parameters': parameters,
           'resultData': resultData,
+        },
+      );
+    } on DioException catch (error) {
+      throw SavedInfographicsException(_readErrorMessage(error));
+    } catch (error) {
+      throw SavedInfographicsException(error.toString());
+    }
+  }
+
+  Future<void> recordExport({
+    required int infographicId,
+    required String fileName,
+    required String fileFormat,
+  }) async {
+    try {
+      await _apiClient.dio.post(
+        '/infographics/$infographicId/exports',
+        data: {
+          'fileName': fileName.trim(),
+          'fileFormat': fileFormat.trim().toUpperCase(),
         },
       );
     } on DioException catch (error) {

@@ -63,22 +63,45 @@ class GradesTable extends StatelessWidget {
                   DataCell(Text(grade.gradeDate ?? '—')),
                   if (isAdmin)
                     DataCell(
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
                         children: [
-                          IconButton(
-                            tooltip: 'Редактировать',
+                          OutlinedButton.icon(
                             onPressed: isBusy
                                 ? null
                                 : () => _openEditDialog(context, grade),
-                            icon: const Icon(Icons.edit_rounded),
+                            icon: const Icon(Icons.edit_rounded, size: 18),
+                            label: const Text('Изменить'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
-                          IconButton(
-                            tooltip: 'Удалить',
+                          OutlinedButton.icon(
                             onPressed: isBusy
                                 ? null
                                 : () => _openDeleteDialog(context, grade),
-                            icon: const Icon(Icons.delete_rounded),
+                            icon: const Icon(Icons.delete_rounded, size: 18),
+                            label: const Text('Удалить'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ],
                       ),

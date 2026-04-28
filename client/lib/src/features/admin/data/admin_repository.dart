@@ -66,6 +66,125 @@ class AdminRepository {
     }
   }
 
+  Future<List<AdminBackupFile>> loadBackups() async {
+    try {
+      final response = await _apiClient.dio.get('/admin/backups');
+
+      return _readDataList(response.data).map(AdminBackupFile.fromJson).toList();
+    } on DioException catch (error) {
+      throw AdminException(_readErrorMessage(error));
+    } catch (error) {
+      throw AdminException(error.toString());
+    }
+  }
+
+  Future<void> createBackup({
+    String? backupName,
+  }) async {
+    try {
+      await _apiClient.dio.post(
+        '/admin/backups',
+        data: {
+          'backupName': backupName,
+        },
+      );
+    } on DioException catch (error) {
+      throw AdminException(_readErrorMessage(error));
+    } catch (error) {
+      throw AdminException(error.toString());
+    }
+  }
+
+  Future<void> restoreBackup({
+    required String fileName,
+  }) async {
+    try {
+      await _apiClient.dio.post(
+        '/admin/backups/${Uri.encodeComponent(fileName)}/restore',
+      );
+    } on DioException catch (error) {
+      throw AdminException(_readErrorMessage(error));
+    } catch (error) {
+      throw AdminException(error.toString());
+    }
+  }
+
+
+  Future<List<AdminTemplate>> loadTemplates() async {
+    try {
+      final response = await _apiClient.dio.get('/admin/templates');
+
+      return _readDataList(response.data).map(AdminTemplate.fromJson).toList();
+    } on DioException catch (error) {
+      throw AdminException(_readErrorMessage(error));
+    } catch (error) {
+      throw AdminException(error.toString());
+    }
+  }
+
+  Future<void> createTemplate({
+    required String templateName,
+    required String chartType,
+    required String colorScheme,
+    required String? description,
+    required bool isActive,
+  }) async {
+    try {
+      await _apiClient.dio.post(
+        '/admin/templates',
+        data: {
+          'templateName': templateName,
+          'chartType': chartType,
+          'colorScheme': colorScheme,
+          'description': description,
+          'isActive': isActive,
+        },
+      );
+    } on DioException catch (error) {
+      throw AdminException(_readErrorMessage(error));
+    } catch (error) {
+      throw AdminException(error.toString());
+    }
+  }
+
+  Future<void> updateTemplate({
+    required int id,
+    required String templateName,
+    required String chartType,
+    required String colorScheme,
+    required String? description,
+    required bool isActive,
+  }) async {
+    try {
+      await _apiClient.dio.put(
+        '/admin/templates/$id',
+        data: {
+          'templateName': templateName,
+          'chartType': chartType,
+          'colorScheme': colorScheme,
+          'description': description,
+          'isActive': isActive,
+        },
+      );
+    } on DioException catch (error) {
+      throw AdminException(_readErrorMessage(error));
+    } catch (error) {
+      throw AdminException(error.toString());
+    }
+  }
+
+  Future<void> deleteTemplate({
+    required int id,
+  }) async {
+    try {
+      await _apiClient.dio.delete('/admin/templates/$id');
+    } on DioException catch (error) {
+      throw AdminException(_readErrorMessage(error));
+    } catch (error) {
+      throw AdminException(error.toString());
+    }
+  }
+
   Future<void> changeUserRole({
     required int accountId,
     required int roleId,
@@ -138,7 +257,14 @@ class AdminRepository {
     final data = error.response?.data;
 
     if (data is Map && data['message'] != null) {
-      return data['message'].toString();
+      final message = data['message'].toString();
+      final details = data['error']?.toString();
+
+      if (details != null && details.trim().isNotEmpty) {
+        return '$message: $details';
+      }
+
+      return message;
     }
 
     if (error.message != null && error.message!.trim().isNotEmpty) {

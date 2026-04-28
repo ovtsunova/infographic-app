@@ -20,6 +20,11 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     on<AdminUserSearchChanged>(_onUserSearchChanged);
     on<AdminUserRoleChanged>(_onUserRoleChanged);
     on<AdminUserBlockStatusChanged>(_onUserBlockStatusChanged);
+    on<AdminTemplateCreateRequested>(_onTemplateCreateRequested);
+    on<AdminTemplateUpdateRequested>(_onTemplateUpdateRequested);
+    on<AdminTemplateDeleteRequested>(_onTemplateDeleteRequested);
+    on<AdminBackupCreateRequested>(_onBackupCreateRequested);
+    on<AdminBackupRestoreRequested>(_onBackupRestoreRequested);
   }
 
   Future<void> _onStarted(
@@ -130,6 +135,179 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     }
   }
 
+
+  Future<void> _onTemplateCreateRequested(
+    AdminTemplateCreateRequested event,
+    Emitter<AdminState> emit,
+  ) async {
+    final previousState = state;
+
+    emit(
+      state.copyWith(
+        status: AdminStatus.submitting,
+        clearMessage: true,
+      ),
+    );
+
+    try {
+      await _repository.createTemplate(
+        templateName: event.templateName,
+        chartType: event.chartType,
+        colorScheme: event.colorScheme,
+        description: event.description,
+        isActive: event.isActive,
+      );
+
+      await _loadData(
+        emit,
+        successMessage: 'Шаблон инфографики успешно создан',
+      );
+    } catch (error) {
+      emit(
+        previousState.copyWith(
+          status: AdminStatus.ready,
+          message: error.toString(),
+          messageIsError: true,
+        ),
+      );
+    }
+  }
+
+  Future<void> _onTemplateUpdateRequested(
+    AdminTemplateUpdateRequested event,
+    Emitter<AdminState> emit,
+  ) async {
+    final previousState = state;
+
+    emit(
+      state.copyWith(
+        status: AdminStatus.submitting,
+        clearMessage: true,
+      ),
+    );
+
+    try {
+      await _repository.updateTemplate(
+        id: event.id,
+        templateName: event.templateName,
+        chartType: event.chartType,
+        colorScheme: event.colorScheme,
+        description: event.description,
+        isActive: event.isActive,
+      );
+
+      await _loadData(
+        emit,
+        successMessage: 'Шаблон инфографики успешно обновлён',
+      );
+    } catch (error) {
+      emit(
+        previousState.copyWith(
+          status: AdminStatus.ready,
+          message: error.toString(),
+          messageIsError: true,
+        ),
+      );
+    }
+  }
+
+  Future<void> _onTemplateDeleteRequested(
+    AdminTemplateDeleteRequested event,
+    Emitter<AdminState> emit,
+  ) async {
+    final previousState = state;
+
+    emit(
+      state.copyWith(
+        status: AdminStatus.submitting,
+        clearMessage: true,
+      ),
+    );
+
+    try {
+      await _repository.deleteTemplate(id: event.id);
+
+      await _loadData(
+        emit,
+        successMessage: 'Шаблон инфографики успешно удалён',
+      );
+    } catch (error) {
+      emit(
+        previousState.copyWith(
+          status: AdminStatus.ready,
+          message: error.toString(),
+          messageIsError: true,
+        ),
+      );
+    }
+  }
+
+  Future<void> _onBackupCreateRequested(
+    AdminBackupCreateRequested event,
+    Emitter<AdminState> emit,
+  ) async {
+    final previousState = state;
+
+    emit(
+      state.copyWith(
+        status: AdminStatus.submitting,
+        clearMessage: true,
+      ),
+    );
+
+    try {
+      await _repository.createBackup(
+        backupName: event.backupName,
+      );
+
+      await _loadData(
+        emit,
+        successMessage: 'Резервная копия базы данных успешно создана',
+      );
+    } catch (error) {
+      emit(
+        previousState.copyWith(
+          status: AdminStatus.ready,
+          message: error.toString(),
+          messageIsError: true,
+        ),
+      );
+    }
+  }
+
+  Future<void> _onBackupRestoreRequested(
+    AdminBackupRestoreRequested event,
+    Emitter<AdminState> emit,
+  ) async {
+    final previousState = state;
+
+    emit(
+      state.copyWith(
+        status: AdminStatus.submitting,
+        clearMessage: true,
+      ),
+    );
+
+    try {
+      await _repository.restoreBackup(
+        fileName: event.fileName,
+      );
+
+      await _loadData(
+        emit,
+        successMessage: 'База данных успешно восстановлена из резервной копии',
+      );
+    } catch (error) {
+      emit(
+        previousState.copyWith(
+          status: AdminStatus.ready,
+          message: error.toString(),
+          messageIsError: true,
+        ),
+      );
+    }
+  }
+
   Future<void> _loadData(
     Emitter<AdminState> emit, {
     String? successMessage,
@@ -147,6 +325,8 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
         _repository.loadUsers(),
         _repository.loadRoles(),
         _repository.loadAuditLogs(limit: 100),
+        _repository.loadTemplates(),
+        _repository.loadBackups(),
       ]);
 
       emit(
@@ -156,6 +336,8 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
           users: responses[1] as List<AdminUser>,
           roles: responses[2] as List<AdminRole>,
           auditLogs: responses[3] as List<AdminAuditLog>,
+          templates: responses[4] as List<AdminTemplate>,
+          backupFiles: responses[5] as List<AdminBackupFile>,
           message: successMessage,
           messageIsError: false,
         ),

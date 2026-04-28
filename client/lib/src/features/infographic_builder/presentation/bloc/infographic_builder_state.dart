@@ -116,6 +116,8 @@ class InfographicBuilderState extends Equatable {
   final List<Student> students;
   final List<dynamic> grades;
   final List<dynamic> attendance;
+  final List<SavedInfographicTemplate> templates;
+  final int? selectedTemplateId;
   final int? selectedGroupId;
   final int? selectedDisciplineId;
   final int? selectedPeriodId;
@@ -136,6 +138,8 @@ class InfographicBuilderState extends Equatable {
     required this.students,
     required this.grades,
     required this.attendance,
+    required this.templates,
+    required this.selectedTemplateId,
     required this.selectedGroupId,
     required this.selectedDisciplineId,
     required this.selectedPeriodId,
@@ -157,6 +161,8 @@ class InfographicBuilderState extends Equatable {
         students = const [],
         grades = const [],
         attendance = const [],
+        templates = const [],
+        selectedTemplateId = null,
         selectedGroupId = null,
         selectedDisciplineId = null,
         selectedPeriodId = null,
@@ -186,6 +192,9 @@ class InfographicBuilderState extends Equatable {
     List<Student>? students,
     List<dynamic>? grades,
     List<dynamic>? attendance,
+    List<SavedInfographicTemplate>? templates,
+    int? selectedTemplateId,
+    bool updateSelectedTemplateId = false,
     int? selectedGroupId,
     bool updateSelectedGroupId = false,
     int? selectedDisciplineId,
@@ -212,6 +221,10 @@ class InfographicBuilderState extends Equatable {
       students: students ?? this.students,
       grades: grades ?? this.grades,
       attendance: attendance ?? this.attendance,
+      templates: templates ?? this.templates,
+      selectedTemplateId: updateSelectedTemplateId
+          ? selectedTemplateId
+          : this.selectedTemplateId,
       selectedGroupId:
           updateSelectedGroupId ? selectedGroupId : this.selectedGroupId,
       selectedDisciplineId: updateSelectedDisciplineId
@@ -243,6 +256,8 @@ class InfographicBuilderState extends Equatable {
         students,
         grades,
         attendance,
+        templates,
+        selectedTemplateId,
         selectedGroupId,
         selectedDisciplineId,
         selectedPeriodId,

@@ -71,7 +71,7 @@ class _AdminView extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Управление пользователями, ролями, блокировками и просмотр журнала действий системы.',
+                  'Управление пользователями, ролями, блокировками, шаблонами инфографики, резервными копиями и просмотр журнала действий системы.',
                   style: TextStyle(
                     color: Color(0xFF6B7280),
                     height: 1.4,
@@ -92,8 +92,18 @@ class _AdminView extends StatelessWidget {
                     _OverviewSection(dashboard: state.dashboard)
                   else if (state.section == AdminSection.users)
                     _UsersSection(state: state)
+                  else if (state.section == AdminSection.templates)
+                    _TemplatesSection(
+                      templates: state.templates,
+                      isBusy: state.isBusy,
+                    )
+                  else if (state.section == AdminSection.audit)
+                    _AuditSection(logs: state.auditLogs)
                   else
-                    _AuditSection(logs: state.auditLogs),
+                    _BackupsSection(
+                      backupFiles: state.backupFiles,
+                      isBusy: state.isBusy,
+                    ),
                 ],
               ],
             ),
@@ -136,9 +146,19 @@ class _SectionSelector extends StatelessWidget {
         icon: Icons.people_alt_rounded,
       ),
       const _SectionItem(
+        section: AdminSection.templates,
+        title: 'Шаблоны',
+        icon: Icons.dashboard_customize_rounded,
+      ),
+      const _SectionItem(
         section: AdminSection.audit,
         title: 'Журнал действий',
         icon: Icons.history_rounded,
+      ),
+      const _SectionItem(
+        section: AdminSection.backups,
+        title: 'Резервные копии',
+        icon: Icons.backup_rounded,
       ),
     ];
 
@@ -560,6 +580,714 @@ class _BlockButton extends StatelessWidget {
   }
 }
 
+
+
+class _HeaderPrimaryButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _HeaderPrimaryButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onPressed == null;
+
+    return Material(
+      color: disabled ? const Color(0xFFBFDBFE) : const Color(0xFF2563EB),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(18),
+        child: SizedBox(
+          height: 56,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 22,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    label,
+                    strutStyle: const StrutStyle(
+                      height: 1.0,
+                      forceStrutHeight: true,
+                    ),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      height: 1.0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminTableActions extends StatelessWidget {
+  final bool isBusy;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _AdminTableActions({
+    required this.isBusy,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 292,
+      height: 44,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _AdminTableActionButton(
+            icon: Icons.edit_rounded,
+            label: 'Изменить',
+            onPressed: isBusy ? null : onEdit,
+          ),
+          const SizedBox(width: 10),
+          _AdminTableActionButton(
+            icon: Icons.delete_outline_rounded,
+            label: 'Удалить',
+            onPressed: isBusy ? null : onDelete,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdminTableActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _AdminTableActionButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onPressed == null;
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          height: 44,
+          width: 136,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: disabled
+                  ? const Color(0xFFD1D5DB)
+                  : const Color(0xFF2563EB),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 19,
+                color: disabled
+                    ? const Color(0xFF9CA3AF)
+                    : const Color(0xFF2563EB),
+              ),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                strutStyle: const StrutStyle(
+                  height: 1.0,
+                  forceStrutHeight: true,
+                ),
+                style: TextStyle(
+                  color: disabled
+                      ? const Color(0xFF9CA3AF)
+                      : const Color(0xFF2563EB),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  height: 1.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminSingleActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _AdminSingleActionButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onPressed == null;
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          height: 46,
+          width: 176,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: disabled
+                  ? const Color(0xFFD1D5DB)
+                  : const Color(0xFF2563EB),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 19,
+                color: disabled
+                    ? const Color(0xFF9CA3AF)
+                    : const Color(0xFF2563EB),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                strutStyle: const StrutStyle(
+                  height: 1.0,
+                  forceStrutHeight: true,
+                ),
+                style: TextStyle(
+                  color: disabled
+                      ? const Color(0xFF9CA3AF)
+                      : const Color(0xFF2563EB),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  height: 1.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TemplatesSection extends StatelessWidget {
+  final List<AdminTemplate> templates;
+  final bool isBusy;
+
+  const _TemplatesSection({
+    required this.templates,
+    required this.isBusy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.dashboard_customize_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 30,
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Шаблоны инфографики',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Шаблоны задают тип диаграммы, цветовую схему и описание оформления. Активные шаблоны доступны пользователям при построении инфографики.',
+                        style: TextStyle(
+                          color: Color(0xFF6B7280),
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                _HeaderPrimaryButton(
+                  icon: Icons.add_rounded,
+                  label: 'Добавить шаблон',
+                  onPressed: isBusy
+                      ? null
+                      : () {
+                          _showTemplateDialog(context);
+                        },
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (templates.isEmpty)
+          const _MessageCard(
+            icon: Icons.dashboard_customize_rounded,
+            title: 'Шаблонов пока нет',
+            message: 'Создайте первый шаблон инфографики для пользователей.',
+          )
+        else
+          _TableCard(
+            child: DataTable(
+              headingRowHeight: 48,
+              dataRowMinHeight: 72,
+              dataRowMaxHeight: 96,
+              columns: const [
+                DataColumn(label: Text('ID')),
+                DataColumn(label: Text('Название')),
+                DataColumn(label: Text('Тип')),
+                DataColumn(label: Text('Цвет')),
+                DataColumn(label: Text('Статус')),
+                DataColumn(label: Text('Описание')),
+                DataColumn(label: Text('Действия')),
+              ],
+              rows: templates.map((template) {
+                return DataRow(
+                  cells: [
+                    DataCell(Text(template.id.toString())),
+                    DataCell(
+                      SizedBox(
+                        width: 240,
+                        child: Text(
+                          template.templateName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                    DataCell(Text(template.chartTypeTitle)),
+                    DataCell(Text(_colorSchemeTitle(template.colorScheme))),
+                    DataCell(_TemplateStatusBadge(isActive: template.isActive)),
+                    DataCell(
+                      SizedBox(
+                        width: 320,
+                        child: Text(
+                          template.description ?? '—',
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      _AdminTableActions(
+                        isBusy: isBusy,
+                        onEdit: () {
+                          _showTemplateDialog(
+                            context,
+                            template: template,
+                          );
+                        },
+                        onDelete: () {
+                          _confirmDeleteTemplate(context, template);
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _showTemplateDialog(
+    BuildContext context, {
+    AdminTemplate? template,
+  }) async {
+    final nameController = TextEditingController(
+      text: template?.templateName ?? '',
+    );
+    final colorSchemeController = TextEditingController(
+      text: template?.colorScheme ?? 'blue',
+    );
+    final descriptionController = TextEditingController(
+      text: template?.description ?? '',
+    );
+
+    var chartType = template?.chartType ?? 'bar';
+    var isActive = template?.isActive ?? true;
+    String? errorMessage;
+
+    final result = await showDialog<_TemplateFormResult>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(
+                template == null
+                    ? 'Добавить шаблон инфографики'
+                    : 'Изменить шаблон инфографики',
+              ),
+              content: SizedBox(
+                width: 620,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Название шаблона',
+                          hintText: 'Например: Успеваемость по группам',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      DropdownButtonFormField<String>(
+                        value: chartType,
+                        decoration: const InputDecoration(
+                          labelText: 'Тип диаграммы',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _chartTypeOptions.map((option) {
+                          return DropdownMenuItem<String>(
+                            value: option.value,
+                            child: Text(option.title),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value == null) {
+                            return;
+                          }
+
+                          setDialogState(() {
+                            chartType = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      DropdownButtonFormField<String>(
+                        value: _normalizeColorScheme(colorSchemeController.text),
+                        decoration: const InputDecoration(
+                          labelText: 'Цветовая схема',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _colorSchemeOptions.map((option) {
+                          return DropdownMenuItem<String>(
+                            value: option.value,
+                            child: Text(option.title),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value == null) {
+                            return;
+                          }
+
+                          setDialogState(() {
+                            colorSchemeController.text = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: descriptionController,
+                        minLines: 3,
+                        maxLines: 5,
+                        decoration: const InputDecoration(
+                          labelText: 'Описание',
+                          hintText: 'Для каких данных предназначен шаблон',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Шаблон активен'),
+                        subtitle: const Text(
+                          'Отключенный шаблон не будет предлагаться пользователям.',
+                        ),
+                        value: isActive,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            isActive = value;
+                          });
+                        },
+                      ),
+                      if (errorMessage != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          errorMessage!,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Отмена'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    final templateName = nameController.text.trim();
+                    final colorScheme = colorSchemeController.text.trim();
+                    final description = descriptionController.text.trim();
+
+                    if (templateName.isEmpty) {
+                      setDialogState(() {
+                        errorMessage = 'Введите название шаблона';
+                      });
+                      return;
+                    }
+
+                    Navigator.of(dialogContext).pop(
+                      _TemplateFormResult(
+                        templateName: templateName,
+                        chartType: chartType,
+                        colorScheme: colorScheme.isEmpty ? 'blue' : colorScheme,
+                        description: description.isEmpty ? null : description,
+                        isActive: isActive,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.save_rounded),
+                  label: const Text('Сохранить'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    nameController.dispose();
+    colorSchemeController.dispose();
+    descriptionController.dispose();
+
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    if (template == null) {
+      context.read<AdminBloc>().add(
+            AdminTemplateCreateRequested(
+              templateName: result.templateName,
+              chartType: result.chartType,
+              colorScheme: result.colorScheme,
+              description: result.description,
+              isActive: result.isActive,
+            ),
+          );
+    } else {
+      context.read<AdminBloc>().add(
+            AdminTemplateUpdateRequested(
+              id: template.id,
+              templateName: result.templateName,
+              chartType: result.chartType,
+              colorScheme: result.colorScheme,
+              description: result.description,
+              isActive: result.isActive,
+            ),
+          );
+    }
+  }
+
+  Future<void> _confirmDeleteTemplate(
+    BuildContext context,
+    AdminTemplate template,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Удалить шаблон?'),
+          content: Text(
+            'Шаблон "${template.templateName}" будет удалён. Если он использовался в сохранённых инфографиках, связь с шаблоном будет очищена, а сами инфографики останутся.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Отмена'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              icon: const Icon(Icons.delete_outline_rounded),
+              label: const Text('Удалить'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!context.mounted || confirmed != true) {
+      return;
+    }
+
+    context.read<AdminBloc>().add(
+          AdminTemplateDeleteRequested(id: template.id),
+        );
+  }
+}
+
+class _TemplateStatusBadge extends StatelessWidget {
+  final bool isActive;
+
+  const _TemplateStatusBadge({
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? Colors.green : Colors.orange;
+    final text = isActive ? 'Активен' : 'Отключен';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 7,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _TemplateFormResult {
+  final String templateName;
+  final String chartType;
+  final String colorScheme;
+  final String? description;
+  final bool isActive;
+
+  const _TemplateFormResult({
+    required this.templateName,
+    required this.chartType,
+    required this.colorScheme,
+    required this.description,
+    required this.isActive,
+  });
+}
+
+class _TemplateOption {
+  final String value;
+  final String title;
+
+  const _TemplateOption({
+    required this.value,
+    required this.title,
+  });
+}
+
+const List<_TemplateOption> _chartTypeOptions = [
+  _TemplateOption(value: 'bar', title: 'Столбчатая'),
+  _TemplateOption(value: 'line', title: 'Линейная'),
+  _TemplateOption(value: 'pie', title: 'Круговая'),
+  _TemplateOption(value: 'doughnut', title: 'Кольцевая'),
+  _TemplateOption(value: 'card', title: 'Карточки'),
+];
+
+const List<_TemplateOption> _colorSchemeOptions = [
+  _TemplateOption(value: 'blue', title: 'Синяя'),
+  _TemplateOption(value: 'green', title: 'Зелёная'),
+  _TemplateOption(value: 'orange', title: 'Оранжевая'),
+  _TemplateOption(value: 'purple', title: 'Фиолетовая'),
+  _TemplateOption(value: 'default', title: 'По умолчанию'),
+];
+
+String _normalizeColorScheme(String value) {
+  final normalized = value.trim().toLowerCase();
+  final allowedValues = _colorSchemeOptions
+      .map((option) => option.value)
+      .toSet();
+
+  if (allowedValues.contains(normalized)) {
+    return normalized;
+  }
+
+  return 'blue';
+}
+
+String _colorSchemeTitle(String value) {
+  final normalized = value.trim().toLowerCase();
+
+  for (final option in _colorSchemeOptions) {
+    if (option.value == normalized) {
+      return option.title;
+    }
+  }
+
+  return value.isEmpty ? 'Не указана' : value;
+}
+
 class _AuditSection extends StatelessWidget {
   final List<AdminAuditLog> logs;
 
@@ -638,6 +1366,221 @@ class _AuditSection extends StatelessWidget {
         }).toList(),
       ),
     );
+  }
+}
+
+class _BackupsSection extends StatelessWidget {
+  final List<AdminBackupFile> backupFiles;
+  final bool isBusy;
+
+  const _BackupsSection({
+    required this.backupFiles,
+    required this.isBusy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.backup_rounded,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 30,
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Резервное копирование базы данных',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'Создание и восстановление резервных копий выполняется на сервере через pg_dump и psql. Перед восстановлением убедитесь, что выбрана нужная копия.',
+                            style: TextStyle(
+                              color: Color(0xFF6B7280),
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    _HeaderPrimaryButton(
+                      icon: Icons.add_rounded,
+                      label: 'Создать копию',
+                      onPressed: isBusy
+                          ? null
+                          : () {
+                              _showCreateBackupDialog(context);
+                            },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (backupFiles.isEmpty)
+          const _MessageCard(
+            icon: Icons.folder_off_rounded,
+            title: 'Резервных копий пока нет',
+            message: 'Создайте первую резервную копию базы данных.',
+          )
+        else
+          _TableCard(
+            child: DataTable(
+              headingRowHeight: 48,
+              dataRowMinHeight: 58,
+              dataRowMaxHeight: 78,
+              columns: const [
+                DataColumn(label: Text('Файл')),
+                DataColumn(label: Text('Формат')),
+                DataColumn(label: Text('Размер')),
+                DataColumn(label: Text('Создана')),
+                DataColumn(label: Text('Действия')),
+              ],
+              rows: backupFiles.map((file) {
+                return DataRow(
+                  cells: [
+                    DataCell(
+                      SizedBox(
+                        width: 360,
+                        child: Text(
+                          file.fileName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    DataCell(Text(file.extension.isEmpty ? 'SQL' : file.extension)),
+                    DataCell(Text(file.sizeTitle)),
+                    DataCell(
+                      SizedBox(
+                        width: 170,
+                        child: Text(
+                          _formatDateTime(file.createdAt),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      _AdminSingleActionButton(
+                        icon: Icons.restore_rounded,
+                        label: 'Восстановить',
+                        onPressed: isBusy
+                            ? null
+                            : () {
+                                _confirmRestoreBackup(context, file.fileName);
+                              },
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _showCreateBackupDialog(BuildContext context) async {
+    final controller = TextEditingController();
+
+    final backupName = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Создать резервную копию'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Название копии',
+              hintText: 'Например: before_restore',
+              helperText: 'Можно оставить пустым, тогда имя будет создано автоматически.',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Отмена'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(controller.text.trim());
+              },
+              icon: const Icon(Icons.backup_rounded),
+              label: const Text('Создать'),
+            ),
+          ],
+        );
+      },
+    );
+
+    controller.dispose();
+
+    if (!context.mounted || backupName == null) {
+      return;
+    }
+
+    context.read<AdminBloc>().add(
+          AdminBackupCreateRequested(
+            backupName: backupName.isEmpty ? null : backupName,
+          ),
+        );
+  }
+
+  Future<void> _confirmRestoreBackup(
+    BuildContext context,
+    String fileName,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Восстановить базу данных?'),
+          content: Text(
+            'Будет выполнено восстановление базы данных из файла "$fileName". Текущие данные будут заменены данными из резервной копии.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Отмена'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              icon: const Icon(Icons.restore_rounded),
+              label: const Text('Восстановить'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!context.mounted || confirmed != true) {
+      return;
+    }
+
+    context.read<AdminBloc>().add(
+          AdminBackupRestoreRequested(fileName: fileName),
+        );
   }
 }
 

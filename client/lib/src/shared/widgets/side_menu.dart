@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:client/src/app/app_router.dart';
+import 'package:client/src/app/app_theme.dart';
 import 'package:client/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:client/src/shared/models/app_user.dart';
 
@@ -26,11 +27,9 @@ class SideMenu extends StatelessWidget {
       width: 280,
       height: double.infinity,
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.sidebarColor,
         border: Border(
-          right: BorderSide(
-            color: Color(0xFFE5E7EB),
-          ),
+          right: BorderSide(color: AppTheme.borderColor),
         ),
       ),
       child: SafeArea(
@@ -39,11 +38,11 @@ class SideMenu extends StatelessWidget {
           child: Column(
             children: [
               _Logo(role: role),
-              const SizedBox(height: 28),
+              const SizedBox(height: 26),
               Expanded(
                 child: ListView.separated(
                   itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final item = items[index];
 
@@ -62,35 +61,10 @@ class SideMenu extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              if (role == AppUserRole.guest)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      context.go(AppPaths.login);
-                      onNavigate?.call();
-                    },
-                    icon: const Icon(Icons.login_rounded),
-                    label: const Text('Войти'),
-                  ),
-                )
-              else
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      final router = GoRouter.of(context);
-                      final authBloc = context.read<AuthBloc>();
-
-                      authBloc.add(const AuthLogoutRequested());
-                      router.go(AppPaths.login);
-
-                      onNavigate?.call();
-                    },
-                    icon: const Icon(Icons.logout_rounded),
-                    label: const Text('Выйти'),
-                  ),
-                ),
+              _BottomAction(
+                role: role,
+                onNavigate: onNavigate,
+              ),
             ],
           ),
         ),
@@ -108,11 +82,6 @@ class SideMenu extends StatelessWidget {
     ];
 
     final userItems = <_MenuItemData>[
-      const _MenuItemData(
-        title: 'Панель',
-        path: AppPaths.dashboard,
-        icon: Icons.dashboard_rounded,
-      ),
       const _MenuItemData(
         title: 'Учебные данные',
         path: AppPaths.educationalData,
@@ -144,26 +113,14 @@ class SideMenu extends StatelessWidget {
     ];
 
     if (role == AppUserRole.guest) {
-      return [
-        ...commonItems,
-        const _MenuItemData(
-          title: 'Авторизация',
-          path: AppPaths.login,
-          icon: Icons.login_rounded,
-        ),
-        const _MenuItemData(
-          title: 'Регистрация',
-          path: AppPaths.register,
-          icon: Icons.person_add_alt_1_rounded,
-        ),
-      ];
+      return commonItems;
     }
 
     if (role == AppUserRole.admin) {
       return [
         ...commonItems,
-        ...userItems,
         ...adminItems,
+        ...userItems,
       ];
     }
 
@@ -171,6 +128,50 @@ class SideMenu extends StatelessWidget {
       ...commonItems,
       ...userItems,
     ];
+  }
+}
+
+class _BottomAction extends StatelessWidget {
+  final AppUserRole role;
+  final VoidCallback? onNavigate;
+
+  const _BottomAction({
+    required this.role,
+    required this.onNavigate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (role == AppUserRole.guest) {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () {
+            context.go(AppPaths.login);
+            onNavigate?.call();
+          },
+          icon: const Icon(Icons.login_rounded),
+          label: const Text('Войти'),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          final router = GoRouter.of(context);
+          final authBloc = context.read<AuthBloc>();
+
+          authBloc.add(const AuthLogoutRequested());
+          router.go(AppPaths.home);
+
+          onNavigate?.call();
+        },
+        icon: const Icon(Icons.logout_rounded),
+        label: const Text('Выйти'),
+      ),
+    );
   }
 }
 
@@ -186,11 +187,25 @@ class _Logo extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppTheme.primaryColor,
+                Color(0xFF4F46E5),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withOpacity(0.22),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.insert_chart_rounded,
@@ -207,17 +222,19 @@ class _Logo extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.textColor,
                 ),
               ),
+              const SizedBox(height: 2),
               Text(
                 role.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF6B7280),
+                  color: AppTheme.mutedTextColor,
                 ),
               ),
             ],
@@ -244,28 +261,29 @@ class _MenuTile extends StatelessWidget {
     final selectedColor = Theme.of(context).colorScheme.primary;
 
     return Material(
-      color: selected ? const Color(0xFFEFF6FF) : Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
+      color: selected ? AppTheme.softBlueColor : Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(
             horizontal: 14,
-            vertical: 13,
+            vertical: 14,
           ),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selected ? selectedColor : const Color(0xFFE5E7EB),
+              color: selected ? selectedColor : AppTheme.borderColor,
             ),
           ),
           child: Row(
             children: [
               Icon(
                 item.icon,
-                size: 21,
-                color: selected ? selectedColor : const Color(0xFF6B7280),
+                size: 22,
+                color: selected ? selectedColor : AppTheme.mutedTextColor,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -275,8 +293,8 @@ class _MenuTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected ? selectedColor : const Color(0xFF172033),
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    color: selected ? selectedColor : AppTheme.textColor,
                   ),
                 ),
               ),

@@ -427,6 +427,34 @@ class EducationalDataRepository {
     }
   }
 
+  Future<CsvImportResult> importCsv({
+    required String endpoint,
+    required String fileName,
+    required String csvText,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post(
+        endpoint,
+        data: {
+          'fileName': fileName.trim().isEmpty ? 'import.csv' : fileName.trim(),
+          'csvText': csvText,
+        },
+      );
+
+      final responseMap = _asMap(response.data);
+      final data = _asMap(responseMap['data']);
+
+      return CsvImportResult.fromJson(
+        message: responseMap['message']?.toString(),
+        json: data,
+      );
+    } on DioException catch (error) {
+      throw EducationalDataException(_readErrorMessage(error));
+    } catch (error) {
+      throw EducationalDataException(error.toString());
+    }
+  }
+
   List<Map<String, dynamic>> _readDataList(dynamic responseData) {
     final responseMap = _asMap(responseData);
     final data = responseMap['data'];
@@ -479,6 +507,78 @@ class EducationalDataRepository {
     }
 
     return text;
+  }
+}
+
+class CsvImportResult {
+  final String fileName;
+  final int rowsTotal;
+  final int rowsSuccess;
+  final int rowsFailed;
+  final List<String> errors;
+  final String message;
+
+  const CsvImportResult({
+    required this.fileName,
+    required this.rowsTotal,
+    required this.rowsSuccess,
+    required this.rowsFailed,
+    required this.errors,
+    required this.message,
+  });
+
+  factory CsvImportResult.fromJson({
+    required String? message,
+    required Map<String, dynamic> json,
+  }) {
+    final rawErrors = json['errors'];
+
+    return CsvImportResult(
+      fileName: json['fileName']?.toString() ?? 'import.csv',
+      rowsTotal: _readIntValue(json['rowsTotal']),
+      rowsSuccess: _readIntValue(json['rowsSuccess']),
+      rowsFailed: _readIntValue(json['rowsFailed']),
+      errors: rawErrors is List
+          ? rawErrors.map((item) => item.toString()).toList()
+          : const [],
+      message: message?.trim().isNotEmpty == true
+          ? message!.trim()
+          : 'Импорт CSV завершен',
+    );
+  }
+
+  String get detailedMessage {
+    final buffer = StringBuffer(message);
+    buffer.write(' Всего строк: $rowsTotal.');
+    buffer.write(' Успешно: $rowsSuccess.');
+    buffer.write(' Ошибок: $rowsFailed.');
+
+    if (errors.isNotEmpty) {
+      buffer.write('\n');
+      buffer.write(errors.take(5).join('\n'));
+
+      if (errors.length > 5) {
+        buffer.write('\nИ еще ошибок: ${errors.length - 5}.');
+      }
+    }
+
+    return buffer.toString();
+  }
+
+  static int _readIntValue(dynamic value) {
+    if (value == null) {
+      return 0;
+    }
+
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(value.toString()) ?? 0;
   }
 }
 

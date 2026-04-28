@@ -68,3 +68,90 @@ class AdminUserBlockStatusChanged extends AdminEvent {
         isBlocked,
       ];
 }
+
+
+class AdminTemplateCreateRequested extends AdminEvent {
+  final String templateName;
+  final String chartType;
+  final String colorScheme;
+  final String? description;
+  final bool isActive;
+
+  const AdminTemplateCreateRequested({
+    required this.templateName,
+    required this.chartType,
+    required this.colorScheme,
+    required this.description,
+    required this.isActive,
+  });
+
+  @override
+  List<Object?> get props => [
+        templateName,
+        chartType,
+        colorScheme,
+        description,
+        isActive,
+      ];
+}
+
+class AdminTemplateUpdateRequested extends AdminEvent {
+  final int id;
+  final String templateName;
+  final String chartType;
+  final String colorScheme;
+  final String? description;
+  final bool isActive;
+
+  const AdminTemplateUpdateRequested({
+    required this.id,
+    required this.templateName,
+    required this.chartType,
+    required this.colorScheme,
+    required this.description,
+    required this.isActive,
+  });
+
+  @override
+  List<Object?> get props => [
+        id,
+        templateName,
+        chartType,
+        colorScheme,
+        description,
+        isActive,
+      ];
+}
+
+class AdminTemplateDeleteRequested extends AdminEvent {
+  final int id;
+
+  const AdminTemplateDeleteRequested({
+    required this.id,
+  });
+
+  @override
+  List<Object?> get props => [id];
+}
+
+class AdminBackupCreateRequested extends AdminEvent {
+  final String? backupName;
+
+  const AdminBackupCreateRequested({
+    this.backupName,
+  });
+
+  @override
+  List<Object?> get props => [backupName];
+}
+
+class AdminBackupRestoreRequested extends AdminEvent {
+  final String fileName;
+
+  const AdminBackupRestoreRequested({
+    required this.fileName,
+  });
+
+  @override
+  List<Object?> get props => [fileName];
+}
