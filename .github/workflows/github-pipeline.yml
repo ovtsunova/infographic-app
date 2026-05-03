@@ -1,0 +1,104 @@
+name: Check infographic-app project
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+env:
+  FLUTTER_VERSION: "3.41.7"
+  DART_VERSION: "3.11.5"
+
+jobs:
+  client:
+    name: Check Flutter client
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Install client dependencies
+        run: |
+          cd client
+          flutter pub get
+
+      - name: Analyze client code
+        run: |
+          cd client
+          echo "Проверка синтаксических ошибок и предупреждений в клиентской части..."
+          flutter analyze
+          echo "Клиентская часть успешно прошла flutter analyze."
+
+      - name: Run client tests
+        run: |
+          cd client
+          echo "Запуск тестов клиентской части..."
+          flutter test
+          echo "Тесты клиентской части успешно пройдены."
+
+      - name: Build Flutter web
+        run: |
+          cd client
+          echo "Сборка Flutter Web..."
+          flutter build web --release
+          echo "Flutter Web успешно собран."
+
+  server:
+    name: Check Dart server
+    runs-on: ubuntu-latest
+    needs: client
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ env.DART_VERSION }}
+
+      - name: Show Dart version
+        run: dart --version
+
+      - name: Install server dependencies
+        run: |
+          cd server
+          dart pub get
+
+      - name: Analyze server code
+        run: |
+          cd server
+          echo "Проверка синтаксических ошибок и предупреждений в серверной части..."
+          dart analyze
+          echo "Серверная часть успешно прошла dart analyze."
+
+      - name: Run server tests
+        run: |
+          cd server
+          echo "Запуск тестов серверной части..."
+          dart test
+          echo "Тесты серверной части успешно пройдены."
+
+  final-check:
+    name: Final project check
+    runs-on: ubuntu-latest
+    needs: server
+
+    steps:
+      - name: Success message
+        run: |
+          echo "Все проверки проекта успешно пройдены:"
+          echo "- клиентская часть Flutter проверена;"
+          echo "- серверная часть Dart проверена;"
+          echo "- тесты выполнены;"
+          echo "- веб-сборка создана."

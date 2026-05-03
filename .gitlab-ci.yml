@@ -1,0 +1,91 @@
+stages:
+  - lint
+  - test
+  - build
+
+variables:
+  FLUTTER_IMAGE: "ghcr.io/cirruslabs/flutter:3.41.7"
+  DART_IMAGE: "dart:3.11.5"
+  PUB_CACHE: "$CI_PROJECT_DIR/.pub-cache"
+
+.client_cache: &client_cache
+  cache:
+    key:
+      files:
+        - client/pubspec.lock
+    paths:
+      - .pub-cache/
+      - client/.dart_tool/
+
+.server_cache: &server_cache
+  cache:
+    key:
+      files:
+        - server/pubspec.lock
+    paths:
+      - .pub-cache/
+      - server/.dart_tool/
+
+client_lint:
+  stage: lint
+  image: $FLUTTER_IMAGE
+  <<: *client_cache
+  script:
+    - cd client
+    - echo "Установка зависимостей клиентской части..."
+    - flutter pub get
+    - echo "Проверка синтаксических ошибок и предупреждений в клиентской части..."
+    - flutter analyze
+    - echo "Клиентская часть успешно прошла flutter analyze."
+
+client_test:
+  stage: test
+  image: $FLUTTER_IMAGE
+  <<: *client_cache
+  script:
+    - cd client
+    - echo "Установка зависимостей клиентской части..."
+    - flutter pub get
+    - echo "Запуск тестов клиентской части..."
+    - flutter test
+    - echo "Тесты клиентской части успешно пройдены."
+
+client_build:
+  stage: build
+  image: $FLUTTER_IMAGE
+  <<: *client_cache
+  script:
+    - cd client
+    - echo "Установка зависимостей клиентской части..."
+    - flutter pub get
+    - echo "Сборка Flutter Web..."
+    - flutter build web --release
+    - echo "Flutter Web успешно собран."
+  artifacts:
+    paths:
+      - client/build/web/
+    expire_in: 7 days
+
+server_lint:
+  stage: lint
+  image: $DART_IMAGE
+  <<: *server_cache
+  script:
+    - cd server
+    - echo "Установка зависимостей серверной части..."
+    - dart pub get
+    - echo "Проверка синтаксических ошибок и предупреждений в серверной части..."
+    - dart analyze
+    - echo "Серверная часть успешно прошла dart analyze."
+
+server_test:
+  stage: test
+  image: $DART_IMAGE
+  <<: *server_cache
+  script:
+    - cd server
+    - echo "Установка зависимостей серверной части..."
+    - dart pub get
+    - echo "Запуск тестов серверной части..."
+    - dart test
+    - echo "Тесты серверной части успешно пройдены."
