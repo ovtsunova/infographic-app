@@ -2,9 +2,13 @@ name: Check infographic-app project
 
 on:
   push:
-    branches: [ master, develop ]
+    branches: [master, develop]
   pull_request:
-    branches: [ master, develop ]
+    branches: [master, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 env:
   FLUTTER_VERSION: "3.41.7"
@@ -15,6 +19,10 @@ jobs:
     name: Check Flutter client
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: client
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,40 +31,37 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
 
       - name: Show Flutter version
         run: flutter --version
 
       - name: Install client dependencies
-        run: |
-          cd client
-          flutter pub get
+        run: flutter pub get
 
       - name: Analyze client code
         run: |
-          cd client
-          echo "Проверка синтаксических ошибок и предупреждений в клиентской части..."
+          echo "Проверка клиентской части..."
           flutter analyze
-          echo "Клиентская часть успешно прошла flutter analyze."
 
       - name: Run client tests
         run: |
-          cd client
           echo "Запуск тестов клиентской части..."
           flutter test
-          echo "Тесты клиентской части успешно пройдены."
 
       - name: Build Flutter web
         run: |
-          cd client
           echo "Сборка Flutter Web..."
           flutter build web --release
-          echo "Flutter Web успешно собран."
 
   server:
     name: Check Dart server
     runs-on: ubuntu-latest
-    needs: client
+
+    defaults:
+      run:
+        working-directory: server
 
     steps:
       - name: Checkout repository
@@ -71,28 +76,22 @@ jobs:
         run: dart --version
 
       - name: Install server dependencies
-        run: |
-          cd server
-          dart pub get
+        run: dart pub get
 
       - name: Analyze server code
         run: |
-          cd server
-          echo "Проверка синтаксических ошибок и предупреждений в серверной части..."
+          echo "Проверка серверной части..."
           dart analyze
-          echo "Серверная часть успешно прошла dart analyze."
 
       - name: Run server tests
         run: |
-          cd server
           echo "Запуск тестов серверной части..."
           dart test
-          echo "Тесты серверной части успешно пройдены."
 
   final-check:
     name: Final project check
     runs-on: ubuntu-latest
-    needs: server
+    needs: [client, server]
 
     steps:
       - name: Success message
