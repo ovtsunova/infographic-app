@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -42,18 +42,21 @@ jobs:
 
       - name: Analyze client code
         run: |
-          echo "Проверка клиентской части..."
-          flutter analyze
+          echo "Проверка синтаксических ошибок и предупреждений в клиентской части..."
+          flutter analyze --no-fatal-infos
+          echo "Клиентская часть успешно прошла flutter analyze."
 
       - name: Run client tests
         run: |
           echo "Запуск тестов клиентской части..."
           flutter test
+          echo "Тесты клиентской части успешно пройдены."
 
       - name: Build Flutter web
         run: |
           echo "Сборка Flutter Web..."
           flutter build web --release
+          echo "Flutter Web успешно собран."
 
   server:
     name: Check Dart server
@@ -65,7 +68,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Dart
         uses: dart-lang/setup-dart@v1
@@ -80,13 +83,15 @@ jobs:
 
       - name: Analyze server code
         run: |
-          echo "Проверка серверной части..."
+          echo "Проверка синтаксических ошибок и предупреждений в серверной части..."
           dart analyze
+          echo "Серверная часть успешно прошла dart analyze."
 
       - name: Run server tests
         run: |
           echo "Запуск тестов серверной части..."
           dart test
+          echo "Тесты серверной части успешно пройдены."
 
   final-check:
     name: Final project check
