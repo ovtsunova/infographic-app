@@ -33,29 +33,43 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+          pub-cache: true
 
       - name: Show Flutter version
         run: flutter --version
 
       - name: Install client dependencies
-        run: flutter pub get
+        run: |
+          for i in 1 2 3; do
+            echo "Попытка установки зависимостей клиента: $i"
+            if flutter pub get; then
+              echo "Зависимости клиента успешно установлены."
+              exit 0
+            fi
+
+            echo "Не удалось получить зависимости клиента. Повтор через 20 секунд..."
+            sleep 20
+          done
+
+          echo "Не удалось установить зависимости клиента после 3 попыток."
+          exit 1
 
       - name: Analyze client code
         run: |
           echo "Проверка синтаксических ошибок и предупреждений в клиентской части..."
-          flutter analyze --no-fatal-infos
+          flutter analyze --no-pub --no-fatal-infos
           echo "Клиентская часть успешно прошла flutter analyze."
 
       - name: Run client tests
         run: |
           echo "Запуск тестов клиентской части..."
-          flutter test
+          flutter test --no-pub
           echo "Тесты клиентской части успешно пройдены."
 
       - name: Build Flutter web
         run: |
           echo "Сборка Flutter Web..."
-          flutter build web --release
+          flutter build web --release --no-pub
           echo "Flutter Web успешно собран."
 
   server:
@@ -79,7 +93,20 @@ jobs:
         run: dart --version
 
       - name: Install server dependencies
-        run: dart pub get
+        run: |
+          for i in 1 2 3; do
+            echo "Попытка установки зависимостей сервера: $i"
+            if dart pub get; then
+              echo "Зависимости сервера успешно установлены."
+              exit 0
+            fi
+
+            echo "Не удалось получить зависимости сервера. Повтор через 20 секунд..."
+            sleep 20
+          done
+
+          echo "Не удалось установить зависимости сервера после 3 попыток."
+          exit 1
 
       - name: Analyze server code
         run: |
