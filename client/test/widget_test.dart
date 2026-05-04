@@ -12,12 +12,21 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.textContaining('Веб-приложение для генерации инфографики'),
+      find.textContaining(
+        'Веб-приложение для генерации инфографики',
+      ),
       findsOneWidget,
     );
 
     expect(
-      find.textContaining('Система предназначена для загрузки'),
+      find.textContaining(
+        'Система помогает загружать учебные данные',
+      ),
+      findsOneWidget,
+    );
+
+    expect(
+      find.textContaining('Учебная статистика в наглядном виде'),
       findsOneWidget,
     );
   });
